@@ -4,7 +4,9 @@ MANIFEST
 PLP.pm
 README
 plp.cgi
+plp.vim
 test.pl
+PLP/FAQ.pod
 PLP/Fields.pm
 PLP/Functions.pm
 PLP/Tie/Delay.pm

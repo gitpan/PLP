@@ -17,55 +17,55 @@ This module is part of the PLP internals and probably not of any use to others.
 
 sub _replace {
     my ($self) = @_;
-    untie %{$self->[0]};
-    %{$self->[0]} = %{ $self->[1]->() };
+    untie %{ $self->[0] };
+    %{ $self->[0] } = %{ $self->[1]->() };
 }
 
 sub TIEHASH {
     my ($class, $hash, $source) = @_;
-    return bless [$hash, $source], $class;
+    return bless [ $hash, $source ], $class;
 }
 
 sub FETCH {
     my ($self, $key) = @_;
     $self->_replace;
-    return ${$self->[0]}{$key};
+    return ${ $self->[0] }{$key};
 }
 
 sub STORE {
     my ($self, $key, $value) = @_;
     $self->_replace;
-    return ${$self->[0]}{$key} = $value;
+    return ${ $self->[0] }{$key} = $value;
 }
 
 sub DELETE {
     my ($self, $key) = @_;
     $self->_replace;
-    return delete ${$self->[0]}{key};
+    return delete ${ $self->[0] }{$key};
 }
 
 sub CLEAR {
     my ($self) = @_;
     $self->_replace;
-    return %{$self->[0]};
+    return %{ $self->[0] };
 }
 
 sub EXISTS {
     my ($self, $key) = @_;
     $self->_replace;
-    return exists ${$self->[0]}{key};
+    return exists ${ $self->[0] }{$key};
 }
 
 sub FIRSTKEY {
     my ($self) = @_;
     $self->_replace;
-    return exists ${$self->[0]}{key};
+    return 'PLPdummy';
 }
 
 sub NEXTKEY {
     my ($self) = @_;
-    $self->_replace;
-    return each %$$self;
+    # Let's hope this never happens. (It's shouldn't.)
+    return undef;
 }
 
 sub UNTIE   { }

@@ -1,4 +1,6 @@
-package PLP;
+#--------------#
+  package PLP;
+#--------------#
 
 use v5.6;
 
@@ -10,7 +12,7 @@ use PLP::Tie::Print;
 
 use strict;
 
-our $VERSION = '3.12';
+our $VERSION = '3.13';
 
 # subs in this package:
 #  sendheaders                      Send headers
@@ -219,6 +221,7 @@ sub start {
     PLP::Fields::doit();
     {
 	package PLP::Script;
+	use vars qw(%headers %header %cookies %cookie %get %post %fields);
 	*headers = \%header;
 	*cookies = \%cookie;
 	PLP::Functions->import();
@@ -321,6 +324,113 @@ other Perl embedders, there is no need to learn a meta-syntax or object
 model: one can just use the normal Perl constructs. PLP runs under mod_perl
 for speeds comparable to those of PHP, but can also be run as a CGI script.
 
+=head2 PLP Syntax
+
+=over 22
+
+=item C<< <: perl_code(); :> >>
+
+With C<< <: >> and C<< :> >>, you can add Perl code to your document. This is
+what PLP is all about. All code outside of these tags is printed. It is
+possible to mix perl language constructs with normal HTML parts of the document:
+
+    <: unless ($ENV{REMOTE_USER}) { :>
+        You are not logged in.
+    <: } :>
+
+C<< :> >> always stops a code block, even when it is found in a string literal.
+
+=item C<< <:= $expression :> >>
+
+Includes a dynamic expression in your document. The expression is evaluated in
+list context. Please note that the expression should not end a statement: avoid
+semi-colons. No whitespace may be between C<< <: >> and the equal sign.
+
+C<< foo <:= $bar :> $baz >> is like C<< <: print 'foo ', $bar, ' baz'; :> >>.
+
+=item C<< <(filename)> >>
+
+Includes another file before the PLP code is executed. The file is included
+literally, so it shares lexical variables. Because this is a compile-time tag,
+it's fast, but you can't use a variable as the filename. You can create
+recursive includes, so beware of that! Whitespace in the filename is not
+ignored so C<< <( foo.txt)> >> includes the file named C< foo.txt>, including
+the space in its name. A compile-time alternative is include(), which is
+described in L<PLP::Functions>.
+
+=back
+
+=head2 PLP Functions
+
+These are described in L<PLP::Functions>.
+
+=head2 PLP Variables
+
+=over 22
+
+=item $ENV{PLP_NAME}
+
+The URI of the PLP document, without the query string. (Example: C</foo.plp>)
+
+=item $ENV{PLP_FILENAME}
+
+The filename of the PLP document. (Example: C</var/www/index.plp>)
+
+=item $PLP::VERSION
+
+The version of PLP.
+
+=item $PLP::DEBUG
+
+Controls debugging output, and should be treated as a bitmask. The least
+significant bit (1) controls if run-time error messages are reported to the
+browser, the second bit (2) controls if headers are sent twice, so they get
+displayed in the browser. A value of 3 means both features are enabled. The
+default value is 1.
+
+=item $PLP::ERROR
+
+Contains a reference to the code that is used to report run-time errors. You
+can override this to have it in your own design, and you could even make it
+report errors by e-mail. The sub reference gets two arguments: the error message
+as plain text and the error message with special characters encoded with HTML 
+entities.
+
+=item %header, %cookie, %get, %post, %fields
+
+These are described in L<PLP::Fields>.
+
+=back
+
+=head2 Things that you should know about
+
+Not only syntax is important, you should also be aware of some other important
+features. Your script runs inside the package C<PLP::Script> and shouldn't
+leave it. This is because when your script ends, all global variables in the
+C<PLP::Script> package are destroyed, which is very important if you run under
+mod_perl (they would retain their values if they weren't explicitly destroyed).
+
+Until your first output, you are printing to a tied filehandle C<PLPOUT>. On
+first output, headers are sent to the browser and C<STDOUT> is selected for
+efficiency. To set headers, you must assign to C<$header{ $header_name}> before
+any output. This means the opening C<< <: >> have to be the first characters in
+your document, without any whitespace in front of them. If you start output and
+try to set headers later, an error message will appear telling you on which
+line your output started.
+
+Because the interpreter that mod_perl uses never ends, C<END { }> blocks won't
+work properly. You should use C<PLP_END { };> instead. Note that this is a not
+a built-in construct, so it needs proper termination with a semi-colon (as do
+<eval> and <do>).
+
+Under mod_perl, modules are loaded only once. A good modular design can improve
+performance because of this, but you will have to B<reload> the modules
+yourself when there are newer versions. 
+
+The special hashes are tied hashes and do not always behave the way you expect,
+especially when mixed with modules that expect normal CGI environments, like
+CGI.pm. Read L<PLP::Fields> for information more about this.
+
 =head1 WEBSITE
 
 For now, all documentation is on the website. Everything will be POD one day,
@@ -329,7 +439,7 @@ but until that day, you will need to visit http://plp.juerd.nl/
 =head1 FAQ
 
 A lot of questions are asked often, so before asking yours, please read the 
-FAQ that is located at http://plp.juerd.nl/faq.plp
+FAQ at L<PLP::FAQ>.
 
 =head1 NO WARRANTY
 

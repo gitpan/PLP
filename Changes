@@ -1,3 +1,18 @@
+3.13 - May 20, 2002
+- Added documentation:
+  - PLP
+  - PLP::FAQ
+  - PLP::Fields
+  - PLP::Functions
+- Added predeclared of hashes for use-strict-users ("our"/"use vars"
+  is no longer necessary for the PLP hashes)
+- Added plp.vim for vim syntax highlighting to the distribution
+- Added error reportig to Counter, ReadFile and WriteFile
+- Changed ReadFile and WriteFile to use lexical filehandles
+- Changed PLP::Functions to use Fcntl for improved portability
+- Cleaned up PLP::Fields: removed the PLPdummies
+- Fixed DELETE, EXISTS and FIRSTKEY in PLP::Tie::Delay (added PLPdummy there)
+
 3.12 - May 18, 2002
 - Fixed strict-violation in PLP.pm that happened only without mod_perl
 

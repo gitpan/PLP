@@ -2,6 +2,7 @@
   package PLP::Functions;
 #-------------------------#
 use base 'Exporter';
+use Fcntl qw(:flock);
 use strict;
 
 our @EXPORT = qw/HiddenFields Entity DecodeURI EncodeURI Entity include PLP_END
@@ -114,34 +115,45 @@ sub AddCookie ($) {
 }
 
 sub ReadFile ($) {
-    local *READFILE;
     local $/ = undef;
-    open (READFILE, '<', $_[0]);
-    my $r = <READFILE>;
-    close READFILE;
+    open (my $fh, '<', $_[0]) or do {
+	PLP::error("Cannot open $_[0] for reading ($!)", 1);
+	return undef;
+    };
+    my $r = readline $fh;
+    close $fh;
     return $r;
 }
 
 sub WriteFile ($$) {
-    local *WRITEFILE;
-    open (WRITEFILE, '>', $_[0]);
-    flock WRITEFILE, 2;
-    print WRITEFILE $_[1];
-    close WRITEFILE;
+    open (my $fh, '>', $_[0]) or do {
+	PLP::error("Cannot open $_[0] for writing ($!)", 1);
+	return undef;
+    };
+    flock $fh, LOCK_EX;
+    print $fh $_[1] or do {
+	PLP::error("Cannot write to $_[0] ($!)");
+	return undef;
+    };
+    close $fh or do {
+	PLP::error("Cannot close $_[0] ($!)");
+	return undef;
+    };
+    return 1;
 }
 
 sub Counter ($) {
-    local *COUNTER;
     local $/ = undef;
-    open           COUNTER, '+<', $_[0] or
-    open	   COUNTER, '>',  $_[0] or return undef;
-    flock          COUNTER, 2;
-    seek           COUNTER, 0, 0;
-    my $counter = <COUNTER>;
-    seek           COUNTER, 0, 0;
-    truncate       COUNTER, 0;
-    print          COUNTER ++$counter;
-    close          COUNTER;
+    my             $fh;
+    open           $fh, '+<', $_[0] or
+    open	   $fh, '>',  $_[0] or return undef;
+    flock          $fh, 2;
+    seek           $fh, 0, 0;
+    my $counter = <$fh>;
+    seek           $fh, 0, 0;
+    truncate       $fh, 0;
+    print          $fh ++$counter   or return undef;
+    close          $fh              or return undef;
     return $counter;
 }
 
@@ -177,5 +189,105 @@ sub AutoURL ($) {
     return defined wantarray ? $$ref : undef;
 }
 
-
 1;
+
+=head1 NAME
+
+PLP::Functions - Functions that are available in PLP documents
+
+=head1 DESCRIPTION
+
+The functions are exported into the PLP::Script package that is used by PLP documents. Although uppercased letters are unusual in Perl, they were chosen to stand out.
+
+Most of these functions are context-hybird. Before using them, one should know about contexts in Perl. The three major contexts are: B<void>, B<scalar> and B<list> context. You'll find more about context in L<perlfunc>.
+
+Some context examples:
+
+    print foo();  # foo is in list context (print LIST)
+    foo();        # foo is in void context
+    $bar = foo(); # foo is in scalar context
+    @bar = foo(); # foo is in list context
+    length foo(); # foo is in scalar context (length EXPR)
+
+=head2 The functions
+
+=over 10
+
+=item Include FILENAME
+
+Executes another PLP file, that will be parsed (i.e. code must be in C<< <: :> >>). As with Perl's C<do>, the file is evaluated in its own lexical file scope, so lexical variables (C<my> variables) are not shared. PLP's C<< <(filename)> >> includes at compile-time, is faster and is doesn't create a lexical scope (it shares lexical variables).
+
+=item include FILENAME
+
+An alias for C<Include>.
+
+=item PLP_END BLOCK
+
+Adds a piece of code that is executed when at the end of the PLP document. This is useful when creating a template file:
+
+    <html><body>       <!-- this is template.plp -->
+    <: PLP_END { :>
+    </body></html>
+    <: } :>
+
+    <(template.plp)>   <!-- this is index.plp -->
+    Hello, world!
+
+You should use this function instead of Perl's built-in C<END> blocks, because those do not work properly with mod_perl.
+
+=item Entity LIST
+
+Replaces HTML syntax characters by HTML entities, so they can be displayed literally. You should always use this on user input (or database output), to avoid cross-site-scripting vurnerabilities. This function does not do everything the L<HTML::Entity> does.
+
+In void context, B<changes> the values of the given variables. In other contexts, returns the changed versions.
+
+    <: print Entity($user_input); :>
+
+=item EncodeURI LIST
+
+Replaces characters by their %-encoded values.
+
+In void context, B<changes> the values of the given variables. In other contexts, returns the changed versions.
+
+    <a href="/foo.plp?name=<:= EncodeURI($name) :>">Link</a>
+
+=item DecodeURI LIST
+
+Decodes %-encoded strings.
+
+In void context, B<changes> the values of the given variables. In other contexts, returns the changed versions.
+
+=item ReadFile FILENAME
+
+Returns the contents of FILENAME in one large string. Returns undef on failure.
+
+=item WriteFile FILENAME, STRING
+
+Writes STRING to FILENAME (overwrites FILENAME if it already exists). Returns true on success, false on failure.
+
+=item Counter FILENAME
+
+Increases the contents of FILENAME by one and returns the new value. Returns undef on failure. Fails silently.
+
+    You are visitor number <:= Counter('counter.txt') :>.
+
+=item AutoURL STRING
+
+Replaces URLs (actually, replace things that look like URLs) by links.
+
+In void context, B<changes> the value of the given variable. In other contexts, returns the changed version.
+
+    <: print AutoURL(Entity($user_input)); :>
+
+=item AddCookie STRING
+
+Adds a Set-Cookie header. STRING must be a valid Set-Cookie header value.
+
+=back
+
+=head1 AUTHOR
+
+Juerd Waalboer <juerd@juerd.nl>
+
+=cut
+
