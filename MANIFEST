@@ -9,6 +9,7 @@ test.pl
 PLP/FAQ.pod
 PLP/Fields.pm
 PLP/Functions.pm
+PLP/HowTo.pod
 PLP/Tie/Delay.pm
 PLP/Tie/Headers.pm
 PLP/Tie/Print.pm

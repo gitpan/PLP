@@ -1,6 +1,5 @@
-#----------------------#
-  package PLP::Fields;
-#----------------------#
+package PLP::Fields;
+
 use strict;
 
 # Has only one function: doit(), which ties the hashes %get, %post, %fields and %header in
@@ -114,7 +113,7 @@ when sending the headers is the one you used first. The following are equal:
 
 =head1 AUTHOR
 
-Juerd Waalboer <juerd@juerd.nl>
+Juerd Waalboer <juerd@cpan.org>
 
 =cut
 

@@ -1,6 +1,4 @@
-#--------------#
-  package PLP;
-#--------------#
+package PLP;
 
 use v5.6;
 
@@ -16,7 +14,7 @@ use Cwd ();
 
 use strict;
 
-our $VERSION = '3.15';
+our $VERSION = '3.16';
 
 # subs in this package:
 #  sendheaders                      Send headers
@@ -30,30 +28,30 @@ our $VERSION = '3.15';
 #  everything                       Do everything: CGI
 #  handler($r)                      Do everything: mod_perl
 
+# About the #S lines:
+# I wanted to implement Safe.pm so that scripts were run inside a
+# configurable compartment. This needed for XS modules to be pre-loaded,
+# hence the PLPsafe_* Apache directives. However, $safe->reval() lets
+# Apache segfault. End of fun. The lines are still here so that I can
+# s/^#S //m to re-implement them whenever this has been fixed.
 
 # Sends the headers waiting in %PLP::Script::header
 sub sendheaders () {
     our $sentheaders = 1;
     print STDOUT "Content-Type: text/plain\n\n" if $PLP::DEBUG & 2;
     print STDOUT map("$_: $PLP::Script::header{$_}\n", keys %PLP::Script::header), "\n";
-};
+}
 
-# Given a filename and optional level (level should be 0 if the caller isn't
-# source() itself), and optional linespec (used by PLP::Functions::Include),
-# this function parses a PLP file and returns Perl code, ready to be eval'ed
 {
-    my %cached; # Conceal cached sources
+    my %cached; # Conceal cached sources: ( path => [ [ deps ], source, -M ] )
     
-    # %cached = (
-    #	$filename => [
-    #	    [ dependency, dependency, dependency ], # <(...)>
-    #	    'source',
-    #	    -M
-    #	]
-    # );
-    
+    # Given a filename and optional level (level should be 0 if the caller isn't
+    # source() itself), and optional linespec (used by PLP::Functions::Include),
+    # this function parses a PLP file and returns Perl code, ready to be eval'ed
     sub source {
 	my ($file, $level, $linespec, $path) = @_;
+	# $file is displayed, $path is used. $path is constructed from $file if
+	# not given.
 	$level = 0      if not defined $level;
 	$linespec = '1' if not defined $linespec;
 	
@@ -128,7 +126,7 @@ sub sendheaders () {
 		    $inB = 0;
 		    $source .= "; print q\cQ";
 		} elsif ($part =~ /^<\((.*?)\)>\z/ and not $inA || $inB) {
-		    my $ipath = File::Spec->rel2abs($1);
+		    my $ipath = File::Spec->rel2abs($1, File::Basename::dirname($path));
 		    $source .= source($1, $level + 1, undef, $ipath) .
 			       qq/\cQ, \n#line $linenr "$file"\nq\cQ/;
 		    push @{ $cached{$path}[0] }, $ipath;
@@ -150,8 +148,7 @@ sub sendheaders () {
     }
 }
 
-# Handles errors, uses the sub reference $PLP::ERROR that gets two arguments:
-# the error message in plain text, and the error message with html entities
+# Handles errors, uses subref $PLP::ERROR (default: \&_default_error)
 sub error {
     my ($error, $type) = @_;
     if (not defined $type or $type < 100) {
@@ -204,8 +201,7 @@ sub clean {
 #  o  Set $ENV{PLP_*} and makes PATH_INFO if needed
 #  o  Change the CWD
 
-# This sub is meant for CGI requests only, and takes apart PATH_TRANSLATED
-# to find the file.
+# CGI initializer: parses PATH_TRANSLATED
 sub cgi_init {
     my $path = $ENV{PATH_TRANSLATED};
     $ENV{PLP_NAME} = $ENV{PATH_INFO};
@@ -240,8 +236,7 @@ sub cgi_init {
     $PLP::code = PLP::source($file, 0, undef, $path);
 }
 
-# This is the mod_perl initializer.
-# Returns 0 on success.
+# mod_perl initializer: returns 0 on success, Apache error code on failure
 sub mod_perl_init {
     my $r = shift;
     
@@ -257,6 +252,7 @@ sub mod_perl_init {
     $ENV{PLP_NAME} = $r->uri;
 
     our $use_cache = $r->dir_config('PLPcache') !~ /^off$/i;
+#S  our $use_safe  = $r->dir_config('PLPsafe')  =~ /^on$/i;
     my $path = $r->filename();
     my ($file, $dir) = File::Basename::fileparse($path);
     chdir $dir;
@@ -266,9 +262,27 @@ sub mod_perl_init {
     return 0; # OK
 }
 
-# Let the games begin!
-# No lexicals may exist at this point.
+#S # For PLPsafe scripts
+#S sub safe_eval {
+#S     my ($r, $code) = @_;
+#S     $r->send_http_header('text/plain');
+#S     require Safe;
+#S     unless ($PLP::safe) {
+#S 	$PLP::safe = Safe->new('PLP::Script');
+#S 	for ( map split, $r->dir_config->get('PLPsafe_module') ) {
+#S 	    $PLP::safe->share('*' . $_ . '::');
+#S 	    s!::!/!g;
+#S 	    require $_ . '.pm';
+#S 	}
+#S 	$PLP::safe->permit(Opcode::full_opset());
+#S 	$PLP::safe->deny(Opcode::opset(':dangerous'));
+#S     }
+#S     $PLP::safe->reval($code);
+#S }
+
+# Let the games begin! No lexicals may exist at this point.
 sub start {
+#S  my ($r) = @_;
     no strict;
     tie *PLPOUT, 'PLP::Tie::Print';
     select PLPOUT;
@@ -282,9 +296,19 @@ sub start {
 	*cookies = \%cookie;
 	PLP::Functions->import();
 	# No lexicals may exist at this point.
-	eval qq{ package PLP::Script; $PLP::code; };
+	
+#S 	if ($PLP::use_safe) {
+#S 	    PLP::safe_eval($r, $PLP::code);
+#S 	} else {
+	    eval qq{ package PLP::Script; $PLP::code; };
+#S 	}
 	PLP::error($@, 1) if $@ and $@ !~ /\cS\cT\cO\cP/;
-	eval   { package PLP::Script; $_->() for reverse @PLP::END };
+
+#S 	if ($PLP::use_safe) {
+#S 	    PLP::safe_eval($r, '$_->() for reverse @PLP::END');
+#S 	} else {
+	    eval   { package PLP::Script; $_->() for reverse @PLP::END };
+#S 	}
 	PLP::error($@, 1) if $@ and $@ !~ /\cS\cT\cO\cP/;
     }
     PLP::sendheaders() unless $PLP::sentheaders;
@@ -294,11 +318,7 @@ sub start {
 #    The above does not work. TODO - find out why not.
 }
 
-# This is run by the CGI script.
-# The CGI script is just:
-#   #!/usr/bin/perl
-#   use PLP;
-#   PLP::everything();
+# This is run by the CGI script. (#!perl \n use PLP; PLP::everything;)
 sub everything {
     clean();
     cgi_init();
@@ -309,9 +329,10 @@ sub everything {
 sub handler {
     require Apache::Constants;
     clean();
-    if (my $ret = mod_perl_init(shift)) {
+    if (my $ret = mod_perl_init($_[0])) {
 	return $ret;
     }
+#S  start($_[0]);
     start();
     no strict 'subs';
     return Apache::Constants::OK();
@@ -487,7 +508,9 @@ efficiency. To set headers, you must assign to C<$header{ $header_name}> before
 any output. This means the opening C<< <: >> have to be the first characters in
 your document, without any whitespace in front of them. If you start output and
 try to set headers later, an error message will appear telling you on which
-line your output started.
+line your output started. An alternative way of setting headers is using Perl's
+BEGIN blocks. BEGIN blocks are executed as soon as possible, before anything
+else.
 
 Because the interpreter that mod_perl uses never ends, C<END { }> blocks won't
 work properly. You should use C<PLP_END { };> instead. Note that this is a not
@@ -502,10 +525,10 @@ The special hashes are tied hashes and do not always behave the way you expect,
 especially when mixed with modules that expect normal CGI environments, like
 CGI.pm. Read L<PLP::Fields> for information more about this.
 
-=head1 FAQ
+=head1 FAQ and HowTo
 
 A lot of questions are asked often, so before asking yours, please read the 
-FAQ at L<PLP::FAQ>.
+FAQ at L<PLP::FAQ>. Some examples can be found at L<PLP::HowTo>.
 
 =head1 NO WARRANTY
 
@@ -514,11 +537,11 @@ responsibility.
 
 =head1 AUTHOR
 
-Juerd Waalboer <juerd@juerd.nl>
+Juerd Waalboer <juerd@cpan.org>
 
 =head1 SEE ALSO
 
-L<PLP::Functions>, L<PLP::Fields>, L<PLP::FAQ>
+L<PLP::Functions>, L<PLP::Fields>, L<PLP::FAQ>, L<PLP::HowTo>
 
 =cut
 

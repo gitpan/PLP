@@ -1,6 +1,5 @@
-#--------------------#
- package PLP::Tie::Print;
-#--------------------#
+package PLP::Tie::Print;
+
 use strict;
 
 =head1 PLP::Tie::Print

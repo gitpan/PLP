@@ -1,3 +1,13 @@
+3.16 - May 21, 2002:
+- Clean up a little
+- Changed compile-time <(...)> includes to use paths relative to the file they
+  are included by. Include() of course still uses paths relative to the current
+  working directory
+- Added and removed Safe.pm implementation. Safe's reval() crashes Apache on
+  Linux :(
+- Removed useless constant in void context in PLP::Functions
+- Added some documentation
+
 3.15 - May 21, 2002:
 - Added caching of scripts. This means using more memory but it also means
   executing scripts 45-65% faster! (mod_perl only)

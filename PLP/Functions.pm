@@ -1,6 +1,5 @@
-#-------------------------#
-  package PLP::Functions;
-#-------------------------#
+package PLP::Functions;
+
 use base 'Exporter';
 use Fcntl qw(:flock);
 use strict;
@@ -16,7 +15,7 @@ sub Include ($) {
     local $@;
     eval 'package PLP::Script; ' . PLP::source($PLP::file, 0, join ' ', (caller)[2,1]);
     if ($@) {
-	PLP::Functions::exit if $@ =~ /\cS\cT\cO\cP/;
+	PLP::Functions::exit() if $@ =~ /\cS\cT\cO\cP/;
 	PLP::error($@, 1);
     }
 }
@@ -67,9 +66,9 @@ sub Entity (@) {
     return defined wantarray ? (wantarray ? @$ref : "@$ref") : undef;
 }
 
-# Browsers do s/ /+/ - I don't care about RFC's, but I do care about real-life
-# situations.
 sub DecodeURI (@) {
+    # Browsers do s/ /+/ - I don't care about RFC's, but I do care about real-life
+    # situations.
     my @r;
     local $_;    
     for (@_) {
@@ -85,6 +84,7 @@ sub DecodeURI (@) {
     }
     return defined wantarray ? (wantarray ? @r : "@r") : undef;
 }
+
 sub EncodeURI (@) {
     my @r;
     local $_;
@@ -297,7 +297,7 @@ Adds a Set-Cookie header. STRING must be a valid Set-Cookie header value.
 
 =head1 AUTHOR
 
-Juerd Waalboer <juerd@juerd.nl>
+Juerd Waalboer <juerd@cpan.org>
 
 =cut
 

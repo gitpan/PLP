@@ -1,6 +1,5 @@
-#--------------------------#
-  package PLP::Tie::Delay;
-#--------------------------#
+package PLP::Tie::Delay;
+
 use strict;
 no strict 'refs';
 
@@ -69,7 +68,7 @@ sub NEXTKEY {
 }
 
 sub UNTIE   { }
-sub DESTORY { } 
+sub DESTROY { } 
 
 1;
 

@@ -1,6 +1,5 @@
-#----------------------------#
-  package PLP::Tie::Headers;
-#----------------------------#
+package PLP::Tie::Headers;
+
 use strict;
 use Carp;
 

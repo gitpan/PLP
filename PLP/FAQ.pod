@@ -1,4 +1,8 @@
-=head1 Frequently Asked Questions about PLP
+=head1 NAME
+
+PLP::FAQ - Frequently Asked Questions about PLP
+
+=head1 FAQ
 
 =over 10
 
