@@ -14,6 +14,7 @@ SYNOPSIS
                       SetHandler perl-script
                       PerlHandler PLP
                       PerlSendHeader On
+                      PerlSetVar PLPcache On
                   </Files>
 
                   # Who said CGI was easier to set up? :)
@@ -49,13 +50,114 @@ DESCRIPTION
     under mod_perl for speeds comparable to those of PHP, but can also be
     run as a CGI script.
 
-WEBSITE
-    For now, all documentation is on the website. Everything will be POD one
-    day, but until that day, you will need to visit http://plp.juerd.nl/
+  PLP Syntax
+    "<: perl_code(); :>"  With "<:" and ":>", you can add Perl code to your
+                          document. This is what PLP is all about. All code
+                          outside of these tags is printed. It is possible
+                          to mix perl language constructs with normal HTML
+                          parts of the document:
+
+                              <: unless ($ENV{REMOTE_USER}) { :>
+                                  You are not logged in.
+                              <: } :>
+
+                          ":>" always stops a code block, even when it is
+                          found in a string literal.
+
+    "<:= $expression :>"  Includes a dynamic expression in your document.
+                          The expression is evaluated in list context.
+                          Please note that the expression should not end a
+                          statement: avoid semi-colons. No whitespace may be
+                          between "<:" and the equal sign.
+
+                          "foo <:= $bar :> $baz" is like "<: print 'foo ',
+                          $bar, ' baz'; :>".
+
+    "<(filename)>"        Includes another file before the PLP code is
+                          executed. The file is included literally, so it
+                          shares lexical variables. Because this is a
+                          compile-time tag, it's fast, but you can't use a
+                          variable as the filename. You can create recursive
+                          includes, so beware! (PLP will catch simple
+                          recursion: the maximum depth is 128.) Whitespace
+                          in the filename is not ignored so "<( foo.txt)>"
+                          includes the file named " foo.txt", including the
+                          space in its name. A compile-time alternative is
+                          include(), which is described in PLP::Functions.
+
+  PLP Functions
+    These are described in PLP::Functions.
+
+  PLP Variables
+    $ENV{PLP_NAME}        The URI of the PLP document, without the query
+                          string. (Example: "/foo.plp")
+
+    $ENV{PLP_FILENAME}    The filename of the PLP document. (Example:
+                          "/var/www/index.plp")
+
+    $PLP::VERSION         The version of PLP.
+
+    $PLP::DEBUG           Controls debugging output, and should be treated
+                          as a bitmask. The least significant bit (1)
+                          controls if run-time error messages are reported
+                          to the browser, the second bit (2) controls if
+                          headers are sent twice, so they get displayed in
+                          the browser. A value of 3 means both features are
+                          enabled. The default value is 1.
+
+    $PLP::ERROR           Contains a reference to the code that is used to
+                          report run-time errors. You can override this to
+                          have it in your own design, and you could even
+                          make it report errors by e-mail. The sub reference
+                          gets two arguments: the error message as plain
+                          text and the error message with special characters
+                          encoded with HTML entities.
+
+    %header, %cookie, %get, %post, %fields
+                          These are described in PLP::Fields.
+
+  (mod_perl only) PerlSetVar configuration directives
+    PLPcache              Sets caching On/Off. When caching, PLP saves your
+                          script in memory and doesn't re-read and re-parse
+                          it if it hasn't changed. PLP will use more memory,
+                          but will also run 50% faster.
+
+                          On is default, anything that isn't =~ /^off$/i is
+                          considered On.
+
+  Things that you should know about
+    Not only syntax is important, you should also be aware of some other
+    important features. Your script runs inside the package "PLP::Script"
+    and shouldn't leave it. This is because when your script ends, all
+    global variables in the "PLP::Script" package are destroyed, which is
+    very important if you run under mod_perl (they would retain their values
+    if they weren't explicitly destroyed).
+
+    Until your first output, you are printing to a tied filehandle "PLPOUT".
+    On first output, headers are sent to the browser and "STDOUT" is
+    selected for efficiency. To set headers, you must assign to $header{
+    $header_name} before any output. This means the opening "<:" have to be
+    the first characters in your document, without any whitespace in front
+    of them. If you start output and try to set headers later, an error
+    message will appear telling you on which line your output started.
+
+    Because the interpreter that mod_perl uses never ends, "END { }" blocks
+    won't work properly. You should use "PLP_END { };" instead. Note that
+    this is a not a built-in construct, so it needs proper termination with
+    a semi-colon (as do <eval> and <do>).
+
+    Under mod_perl, modules are loaded only once. A good modular design can
+    improve performance because of this, but you will have to reload the
+    modules yourself when there are newer versions.
+
+    The special hashes are tied hashes and do not always behave the way you
+    expect, especially when mixed with modules that expect normal CGI
+    environments, like CGI.pm. Read PLP::Fields for information more about
+    this.
 
 FAQ
     A lot of questions are asked often, so before asking yours, please read
-    the FAQ that is located at http://plp.juerd.nl/faq.plp
+    the FAQ at PLP::FAQ.
 
 NO WARRANTY
     No warranty, no guarantees. Use PLP at your own risk, as I disclaim all
@@ -63,4 +165,7 @@ NO WARRANTY
 
 AUTHOR
     Juerd Waalboer <juerd@juerd.nl>
+
+SEE ALSO
+    PLP::Functions, PLP::Fields, PLP::FAQ
 

@@ -10,9 +10,13 @@ use PLP::Tie::Headers;
 use PLP::Tie::Delay;
 use PLP::Tie::Print;
 
+use File::Basename ();
+use File::Spec;
+use Cwd ();
+
 use strict;
 
-our $VERSION = '3.13';
+our $VERSION = '3.15';
 
 # subs in this package:
 #  sendheaders                      Send headers
@@ -37,65 +41,113 @@ sub sendheaders () {
 # Given a filename and optional level (level should be 0 if the caller isn't
 # source() itself), and optional linespec (used by PLP::Functions::Include),
 # this function parses a PLP file and returns Perl code, ready to be eval'ed
-sub source {
-    my ($path, $level, $linespec) = @_;
-    $level = 0      if not defined $level;
-    $linespec = '1' if not defined $linespec;
+{
+    my %cached; # Conceal cached sources
     
-    our ($inA, $inB);
+    # %cached = (
+    #	$filename => [
+    #	    [ dependency, dependency, dependency ], # <(...)>
+    #	    'source',
+    #	    -M
+    #	]
+    # );
     
-    (my $file = $path) =~ s[.*/][];
-    
-    my $source = $level
-	? qq/\cQ;\n#line 1 "$file"\nprint q\cQ/
-	: qq/\n#line 1 "$file"\nprint q\cQ/;
-    my $linenr = 0;
-    
-    local *SOURCE;
-    open SOURCE, '<', $path or return $level
-	? qq{\cQ; die qq[Can't open "\Q$path\E" (\Q$!\E)]; print q\cQ}
-	: qq{\n#line $linespec\ndie qq[Can't open "\Q$path\E" (\Q$!\E)];};
-    
-    LINE:
-    while (defined (my $line = <SOURCE>)) {
-	$linenr++;
-	for (;;) {
-	    $line =~ /
-		\G                  # Begin where left off
-		( \z                # End
-		| <:=? | :>         # PLP tags     <:= ... :> <: ... :>
-		| <\(.*?\)>         # Include tags <(...)>
-		| <[^:(][^<:]*      # Normal text
-		| :[^>][^<:]*       # Normal text
-		| [^<:]*            # Normal text
-		)
-	    /gxs;
-	    next LINE unless length $1;
-	    my $part = $1;
-	    if ($part eq '<:=' and not $inA || $inB) {
-		$inA = 1;
-		$source .= "\cQ, ";
-	    } elsif ($part eq '<:' and not $inA || $inB) {
-		$inB = 1;
-		$source .= "\cQ; ";
-	    } elsif ($part eq ':>' and $inA) {
-		$inA = 0;
-		$source .= ", q\cQ";
-	    } elsif ($part eq ':>' and $inB) {
-		$inB = 0;
-		$source .= "; print q\cQ";
-	    } elsif ($part =~ /^<\((.*?)\)>\z/ and not $inA || $inB) {
-		$source .= source($1, $level + 1) .
-			   qq/\cQ, \n#line $linenr "$file"\nq\cQ/;
-	    } else {
-		$part =~ s/\\/\\\\/ if not $inA || $inB;
-		$source .= $part;
+    sub source {
+	my ($file, $level, $linespec, $path) = @_;
+	$level = 0      if not defined $level;
+	$linespec = '1' if not defined $linespec;
+	
+	if ($level > 128) {
+	    %cached = ();
+	    return $level
+		? qq{\cQ; die qq[Include recursion detected]; print q\cQ}
+		: qq{\n#line $linespec\ndie qq[Include recursion detected];};
+	}
+
+	our ($inA, $inB, $use_cache);
+	$path ||= File::Spec->rel2abs($file);
+	
+	my $source_start = $level
+	    ? qq/\cQ;\n#line 1 "$file"\nprint q\cQ/
+	    : qq/\n#line 1 "$file"\nprint q\cQ/;
+	
+	if ($use_cache and exists $cached{$path}) {
+	    BREAKOUT: {
+		my @checkstack = ($path);
+		my $item;
+		my %checked;
+		while (defined(my $item = shift @checkstack)) {
+		    next if $checked{$item};
+		    last BREAKOUT if $cached{$item}[2] > -M $item;
+		    $checked{$item} = 1;
+		    push @checkstack, @{ $cached{$item}[0] }
+			if @{ $cached{$item}[0] };
+		}
+		return $level
+		    ? $source_start . $cached{$path}[1]
+		    : $source_start . $cached{$path}[1] . "\cQ";
 	    }
 	}
-    }
-    $source .= "\cQ" unless $level;
 
-    return $source;
+	$cached{$path} = [ [ ], undef, undef ] if $use_cache;
+	
+	my $linenr = 0;
+	my $source = '';
+
+	local *SOURCE;
+	open SOURCE, '<', $path or return $level
+	    ? qq{\cQ; die qq[Can't open "\Q$path\E" (\Q$!\E)]; print q\cQ}
+	    : qq{\n#line $linespec\ndie qq[Can't open "\Q$path\E" (\Q$!\E)];};
+	
+	LINE:
+	while (defined (my $line = <SOURCE>)) {
+	    $linenr++;
+	    for (;;) {
+		$line =~ /
+		    \G                  # Begin where left off
+		    ( \z                # End
+		    | <:=? | :>         # PLP tags     <:= ... :> <: ... :>
+		    | <\(.*?\)>         # Include tags <(...)>
+		    | <[^:(][^<:]*      # Normal text
+		    | :[^>][^<:]*       # Normal text
+		    | [^<:]*            # Normal text
+		    )
+		/gxs;
+		next LINE unless length $1;
+		my $part = $1;
+		if ($part eq '<:=' and not $inA || $inB) {
+		    $inA = 1;
+		    $source .= "\cQ, ";
+		} elsif ($part eq '<:' and not $inA || $inB) {
+		    $inB = 1;
+		    $source .= "\cQ; ";
+		} elsif ($part eq ':>' and $inA) {
+		    $inA = 0;
+		    $source .= ", q\cQ";
+		} elsif ($part eq ':>' and $inB) {
+		    $inB = 0;
+		    $source .= "; print q\cQ";
+		} elsif ($part =~ /^<\((.*?)\)>\z/ and not $inA || $inB) {
+		    my $ipath = File::Spec->rel2abs($1);
+		    $source .= source($1, $level + 1, undef, $ipath) .
+			       qq/\cQ, \n#line $linenr "$file"\nq\cQ/;
+		    push @{ $cached{$path}[0] }, $ipath;
+		} else {
+		    $part =~ s/\\/\\\\/ if not $inA || $inB;
+		    $source .= $part;
+		}
+	    }
+	}
+
+	if ($use_cache) {
+	    $cached{$path}[1] = $source;
+	    $cached{$path}[2] = -M $path;
+	}
+
+	return $level
+	    ? $source_start . $source
+	    : $source_start . $source . "\cQ";
+    }
 }
 
 # Handles errors, uses the sub reference $PLP::ERROR that gets two arguments:
@@ -155,11 +207,11 @@ sub clean {
 # This sub is meant for CGI requests only, and takes apart PATH_TRANSLATED
 # to find the file.
 sub cgi_init {
-    my $file = defined $_[0] ? $_[0] : $ENV{PATH_TRANSLATED};
+    my $path = $ENV{PATH_TRANSLATED};
     $ENV{PLP_NAME} = $ENV{PATH_INFO};
     my $path_info;
-    while (not -f $file) {
-        if (not $file =~ s/(\/+[^\/]*)$//) {
+    while (not -f $path) {
+        if (not $path =~ s/(\/+[^\/]*)$//) {
 	    print STDERR "PLP: Not found: $ENV{PATH_TRANSLATED} ($ENV{REQUEST_URI})\n";
 	    PLP::error(undef, 404);
 	    exit;
@@ -169,7 +221,7 @@ sub cgi_init {
 	$path_info = $pi . $path_info;
     }
     
-    if (not -r $file) {
+    if (not -r $path) {
 	print STDERR "PLP: Can't read: $ENV{PATH_TRANSLATED} ($ENV{REQUEST_URI})\n";
 	PLP::error(undef, 403);
 	exit;
@@ -181,11 +233,11 @@ sub cgi_init {
     };
 
     $ENV{PATH_INFO} = $path_info if defined $path_info;
-    $ENV{PLP_FILENAME} = $file;
-    (my $dir = $file) =~ s{/[^/]+$}[];
+    $ENV{PLP_FILENAME} = $path;
+    my ($file, $dir) = File::Basename::fileparse($path);
     chdir $dir;
 
-    $PLP::code = PLP::source($file, 0);
+    $PLP::code = PLP::source($file, 0, undef, $path);
 }
 
 # This is the mod_perl initializer.
@@ -202,10 +254,14 @@ sub mod_perl_init {
 	return Apache::Constants::FORBIDDEN();
     }
     
-    (my $dir) = $filename =~ m!(.*)/!s;
-    chdir $dir;
     $ENV{PLP_NAME} = $r->uri;
-    $PLP::code = PLP::source($r->filename);
+
+    our $use_cache = $r->dir_config('PLPcache') !~ /^off$/i;
+    my $path = $r->filename();
+    my ($file, $dir) = File::Basename::fileparse($path);
+    chdir $dir;
+
+    $PLP::code = PLP::source($file, 0, undef, $path);
 
     return 0; # OK
 }
@@ -279,6 +335,7 @@ PLP - Perl in HTML pages
         SetHandler perl-script
         PerlHandler PLP
         PerlSendHeader On
+	PerlSetVar PLPcache On
     </Files>
 
     # Who said CGI was easier to set up? :)
@@ -353,10 +410,10 @@ C<< foo <:= $bar :> $baz >> is like C<< <: print 'foo ', $bar, ' baz'; :> >>.
 Includes another file before the PLP code is executed. The file is included
 literally, so it shares lexical variables. Because this is a compile-time tag,
 it's fast, but you can't use a variable as the filename. You can create
-recursive includes, so beware of that! Whitespace in the filename is not
-ignored so C<< <( foo.txt)> >> includes the file named C< foo.txt>, including
-the space in its name. A compile-time alternative is include(), which is
-described in L<PLP::Functions>.
+recursive includes, so beware! (PLP will catch simple recursion: the maximum
+depth is 128.) Whitespace in the filename is not ignored so C<< <( foo.txt)> >>
+includes the file named C< foo.txt>, including the space in its name. A
+compile-time alternative is include(), which is described in L<PLP::Functions>.
 
 =back
 
@@ -402,6 +459,20 @@ These are described in L<PLP::Fields>.
 
 =back
 
+=head2 (mod_perl only) PerlSetVar configuration directives
+
+=over 22
+
+=item PLPcache
+
+Sets caching B<On>/B<Off>. When caching, PLP saves your script in memory and
+doesn't re-read and re-parse it if it hasn't changed. PLP will use more memory,
+but will also run 50% faster.
+
+B<On> is default, anything that isn't =~ /^off$/i is considered On.
+
+=back
+
 =head2 Things that you should know about
 
 Not only syntax is important, you should also be aware of some other important
@@ -431,11 +502,6 @@ The special hashes are tied hashes and do not always behave the way you expect,
 especially when mixed with modules that expect normal CGI environments, like
 CGI.pm. Read L<PLP::Fields> for information more about this.
 
-=head1 WEBSITE
-
-For now, all documentation is on the website. Everything will be POD one day,
-but until that day, you will need to visit http://plp.juerd.nl/
-
 =head1 FAQ
 
 A lot of questions are asked often, so before asking yours, please read the 
@@ -449,6 +515,10 @@ responsibility.
 =head1 AUTHOR
 
 Juerd Waalboer <juerd@juerd.nl>
+
+=head1 SEE ALSO
+
+L<PLP::Functions>, L<PLP::Fields>, L<PLP::FAQ>
 
 =cut
 

@@ -217,6 +217,16 @@ Some context examples:
 
 Executes another PLP file, that will be parsed (i.e. code must be in C<< <: :> >>). As with Perl's C<do>, the file is evaluated in its own lexical file scope, so lexical variables (C<my> variables) are not shared. PLP's C<< <(filename)> >> includes at compile-time, is faster and is doesn't create a lexical scope (it shares lexical variables).
 
+Include can be used recursively, and there is no depth limit:
+
+    <!-- This is crash.plp -->
+    <:
+        include 'crash.plp';
+        # This example will loop forever,
+        # and dies with an out of memory error.
+	# Do not try this at home.
+    :>
+
 =item include FILENAME
 
 An alias for C<Include>.

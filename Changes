@@ -1,3 +1,14 @@
+3.15 - May 21, 2002:
+- Added caching of scripts. This means using more memory but it also means
+  executing scripts 45-65% faster! (mod_perl only)
+- Added configurability of caching: PerlSetVar PLPcache On/Off (Default: On)
+- Changed PLP.pm to use File::Basename and File::Spec
+- Added recursion protection for compile-time includes (fixed max depth: 128)
+
+3.14 - May 20, 2002:
+- New plp.vim
+- Small documentation change
+
 3.13 - May 20, 2002
 - Added documentation:
   - PLP
