@@ -8,10 +8,9 @@ use PLP::Tie::Headers;
 use PLP::Tie::Delay;
 use PLP::Tie::Print;
 
-use Symbol ();
-#use strict;
+use strict;
 
-our $VERSION = '3.10';
+our $VERSION = '3.11';
 
 # subs in this package:
 #  sendheaders                      Send headers
@@ -231,8 +230,9 @@ sub start {
     }
     PLP::sendheaders() unless $PLP::sentheaders;
     select STDOUT;
-    # undef *{"PLP::Script::$_"} for keys %PLP::Script::;
-    Symbol::delete_package('PLP::Script');
+    undef *{"PLP::Script::$_"} for keys %PLP::Script::;
+#    Symbol::delete_package('PLP::Script');
+#    The above does not work. TODO - find out why not.
 }
 
 # This is run by the CGI script.

@@ -1,3 +1,7 @@
+3.11 - May 18, 2002
+- Fixed all tie-stuff by reverting a change. Symbol.pm's delete_package doesn't
+  delete a package in the way I thought it did.
+
 3.10 - May 18, 2002
 - First standardized module distribution, to allow easy distribution via CPAN
 - Caution: installation procedure has changed because of that!

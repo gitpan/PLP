@@ -18,11 +18,7 @@ sub doit {
     tie %PLP::Script::get, 'PLP::Tie::Delay', 'PLP::Script::get', sub {
 	my %get;
 	my $get;
-	if ($ENV{MOD_PERL}) {
-	    $get = Apache->request->args;
-	} else {
-	    $get = $ENV{QUERY_STRING}
-	}
+	$get = $ENV{QUERY_STRING};
 	if ($get ne ''){
 	    for (split /[&;]/, $get) {
 		my @keyval = split /=/, $_, 2;
