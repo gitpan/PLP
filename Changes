@@ -1,3 +1,12 @@
+3.17 - August 21, 2002:
+- More cleanups
+- %get is now built on script start, no longer on first access
+- Apache->request->print is used now under mod_perl, not print (faster)
+- Small documentation fixes
+- Setting a header when headers are already sent now tells you where output
+  started
+- Speedup in source()
+
 3.16 - May 21, 2002:
 - Clean up a little
 - Changed compile-time <(...)> includes to use paths relative to the file they

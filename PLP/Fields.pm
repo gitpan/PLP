@@ -2,62 +2,69 @@ package PLP::Fields;
 
 use strict;
 
-# Has only one function: doit(), which ties the hashes %get, %post, %fields and %header in
-# PLP::Script. Also generates %cookie immediately.
+# Has only one function: doit(), which ties the hashes %get, %post, %fields
+# and %header in PLP::Script. Also generates %cookie immediately.
 sub doit {
-    tie %PLP::Script::get, 'PLP::Tie::Delay', 'PLP::Script::get', sub {
-	my %get;
-	my $get = $ENV{QUERY_STRING};
-	if ($get ne ''){
-	    for (split /[&;]/, $get) {
-		my @keyval = split /=/, $_, 2;
-		PLP::Functions::DecodeURI(@keyval);
-		$get{$keyval[0]} = $keyval[1] unless $keyval[0] =~ /^\@/;
-		push @{ $get{'@' . $keyval[0]} }, $keyval[1];
-	    }
+
+    # %get
+    
+    my $get = \%PLP::Script::get;
+    if (length $ENV{QUERY_STRING}){
+	for (split /[&;]/, $ENV{QUERY_STRING}) {
+	    my @keyval = split /=/, $_, 2;
+	    PLP::Functions::DecodeURI(@keyval);
+	    $get->{$keyval[0]} = $keyval[1] unless $keyval[0] =~ /^\@/;
+	    push @{ $get->{ '@' . $keyval[0] } }, $keyval[1];
 	}
-	return \%get;
-    };
+    }
+
+    # %post
 
     tie %PLP::Script::post, 'PLP::Tie::Delay', 'PLP::Script::post', sub {
 	my %post;
 	my $post;
+	
+	return \%post if $ENV{CONTENT_TYPE} !~
+	    m!^(?:application/x-www-form-urlencoded|$)!;
+	
 	if ($ENV{MOD_PERL}) {
 	    $post = Apache->request->content;
 	} else {
-	    read(*STDIN, $post, $ENV{CONTENT_LENGTH});
+	    read *STDIN, $post, $ENV{CONTENT_LENGTH};
 	}
-	if (defined $post
-	    and $post ne ''
-	    and $ENV{CONTENT_TYPE} =~ m!^(?:application/x-www-form-urlencoded|$)!
-	){
-	    for (split /&/, $post) {
-		my @keyval = split /=/, $_, 2;
-		PLP::Functions::DecodeURI(@keyval);
-		$post{$keyval[0]} = $keyval[1] unless $keyval[0] =~ /^\@/;
-		push @{ $post{'@' . $keyval[0]} }, $keyval[1];
-	    }
+	
+	return \%post unless defined $post and length $post;
+	
+	for (split /&/, $post) {
+	    my @keyval = split /=/, $_, 2;
+	    PLP::Functions::DecodeURI(@keyval);
+	    $post{$keyval[0]} = $keyval[1] unless $keyval[0] =~ /^\@/;
+	    push @{ $post{ '@' . $keyval[0] } }, $keyval[1];
 	}
+	
 	return \%post;
     };
 
+    # %fields
+
     tie %PLP::Script::fields, 'PLP::Tie::Delay', 'PLP::Script::fields', sub {
-#	$PLP::Script::get{PLPdummy}, $PLP::Script::post{PLPdummy}; # Trigger creation
-#	No longer necessary, as PLP::Tie::Delay has been fixed since 3.00
-#	And fixed even more in 3.13
 	return { %PLP::Script::get, %PLP::Script::post };
     };
 
+    # %header
+
     tie %PLP::Script::header, 'PLP::Tie::Headers';
 
-    if (defined($ENV{HTTP_COOKIE}) && $ENV{HTTP_COOKIE} ne ''){
+    # %cookie
+
+    if (defined $ENV{HTTP_COOKIE} and length $ENV{HTTP_COOKIE}) {
 	for (split /; ?/, $ENV{HTTP_COOKIE}) {
 	    my @keyval = split /=/, $_, 2;
 	    $PLP::Script::cookie{$keyval[0]} ||= $keyval[1];
 	}
     }
-
 }
+
 1;
 
 =head1 NAME
@@ -79,8 +86,8 @@ strings in query string and post content. C<%post> is not built if the content
 type is not C<application/x-www-form-urlencoded>. In post content, the
 semi-colon is not a valid separator.
 
-These hashes aren't built until they are used, to speed up your script if you
-don't use them. Because POST content can only be read once, you can C<use CGI;>
+%post isn't built until it is used, to speed up your script if you
+don't use it. Because POST content can only be read once, you can C<use CGI;>
 and just never access C<%post> to avoid its building.
 
 With a query string of C<key=firstvalue&key=secondvalue>, C<$get{key}> will
@@ -90,13 +97,15 @@ reference C<$get{'@key'}>, which will contain C<[ 'firstvalue', 'secondvalue'
 
 =item C<%fields>
 
-This hash combines %get and %post, and triggers creation of both. POST gets
+This hash combines %get and %post, and triggers creation of %post. POST gets
 precedence over GET (note: not even the C<@>-keys contain both values).
+
+This hash is built on first use, just like %post.
 
 =item C<%cookie>, C<%cookies>
 
 This is built immediately, because cookies are usually short in length. Cookies
-are not automatically url-decoded.
+are B<not> automatically url-decoded.
 
 =item C<%header>, C<%headers>
 

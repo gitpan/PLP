@@ -94,7 +94,7 @@ run-time errors. To do so, set the 0-bit (1) of C<$PLP::DEBUG> off. If you only
 want error reporting disabled for a single command, use Perl's C<eval BLOCK>
 function (not C<eval "">, but C<eval {}>, which is not slow or insecure.).
 
-    <: $PLP::DEBUG ^= 1 if $PLP::DEBUG & 1; :>
+    <: $PLP::DEBUG &= ~1; :>
 
 =item Can I have my own error messages?
 
@@ -115,7 +115,7 @@ version.
 There is. Set C<$PLP::DEBUG>'s 1-bit (2), and it will output a plain text header
 before outputting the other one.
 
-    <: $PLP::DEBUG ^= 2 unless $PLP::DEBUG & 2 :>
+    <: $PLP::DEBUG |= 2; :>
 
 =back
 

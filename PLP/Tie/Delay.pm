@@ -17,30 +17,37 @@ This module is part of the PLP internals and probably not of any use to others.
 sub _replace {
     my ($self) = @_;
     untie %{ $self->[0] };
-    %{ $self->[0] } = %{ $self->[1]->() };
+
+    # I'd like to use *{ $self->[0] } = $self->[1]->(); here,
+    # but that causes all sorts of problems. The hash is accessible from
+    # within this sub, but not where its creation was triggered.
+    # Immediately after the triggering statement, the hash becomes available
+    # to all: even the scope where the previous access attempt failed.
+    
+    %{ $self->[0] } = %{ $self->[1]->() }
 }
 
 sub TIEHASH {
-    my ($class, $hash, $source) = @_;
-    return bless [ $hash, $source ], $class;
+    # my ($class, $hash, $source) = @_;
+    return bless [ @_[1, 2] ], $_[0];
 }
 
 sub FETCH {
     my ($self, $key) = @_;
     $self->_replace;
-    return ${ $self->[0] }{$key};
+    return $self->[0]->{$key};
 }
 
 sub STORE {
     my ($self, $key, $value) = @_;
     $self->_replace;
-    return ${ $self->[0] }{$key} = $value;
+    return $self->[0]->{$key} = $value;
 }
 
 sub DELETE {
     my ($self, $key) = @_;
     $self->_replace;
-    return delete ${ $self->[0] }{$key};
+    return delete $self->[0]->{$key};
 }
 
 sub CLEAR {
@@ -52,7 +59,7 @@ sub CLEAR {
 sub EXISTS {
     my ($self, $key) = @_;
     $self->_replace;
-    return exists ${ $self->[0] }{$key};
+    return exists $self->[0]->{$key};
 }
 
 sub FIRSTKEY {
@@ -62,12 +69,12 @@ sub FIRSTKEY {
 }
 
 sub NEXTKEY {
-    my ($self) = @_;
     # Let's hope this never happens. (It's shouldn't.)
     return undef;
 }
 
 sub UNTIE   { }
+
 sub DESTROY { } 
 
 1;

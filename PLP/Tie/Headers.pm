@@ -14,14 +14,14 @@ This module is part of the PLP internals and probably not of much use to others.
 
 =cut
 
-sub _lc($) {
+sub _lc ($) {
     local $_ = $_[0];
     tr/_/-/;
     return lc;
 }
 
 sub TIEHASH {
-    return bless [ # Defaults.
+    return bless [ # Defaults
         {
     	    'Content-Type'  => 'text/html',
     	    'X-PLP-Version' => $PLP::VERSION,
@@ -40,10 +40,15 @@ sub FETCH {
 
 sub STORE {
     my ($self, $key, $value) = @_;
-    croak 'Can\'t set headers after sending them!' if $PLP::sentheaders;
+    if ($PLP::sentheaders) {
+    	my @caller = caller;
+	die "Can't set headers after sending them at " .
+	    "$caller[1] line $caller[2].\n(Output started at " .
+	    "$PLP::sentheaders->[0] line $PLP::sentheaders->[1].)\n"
+    }
     if (defined $self->[1]->{_lc $key}){
         $key = $self->[1]->{_lc $key};
-    }else{
+    } else {
         $self->[1]->{lc $key} = $key;
     }
     return ($self->[0]->{$key} = $value);

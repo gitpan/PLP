@@ -12,23 +12,21 @@ This module is part of the PLP Internals and probably not of much use to others.
 
 =cut
 
-sub TIEHANDLE {
-    return bless {}, $_[0];
-}
+sub TIEHANDLE { bless \my $dummy, $_[0] }
 
-sub WRITE { undef; }
+sub WRITE { undef }
 
 sub PRINT {
-    my ($self, @param) = @_;
-    return if @param == 1 and not length $param[0];
+    shift;
+    return if @_ == 1 and not length $_[0];
     PLP::sendheaders() unless $PLP::sentheaders;
-    print STDOUT @param;
+    print STDOUT @_;
     select STDOUT;
 }
 
 sub PRINTF {
-    my ($self, @param) = @_;
-    printf STDOUT @param;
+    shift;
+    printf STDOUT @_;
     select STDOUT;
 }
 
@@ -41,6 +39,8 @@ sub GETC { '%' }
 sub CLOSE { undef }
 
 sub UNTIE { undef }
+
+sub DESTROY { undef }
 
 1;
 
