@@ -53,6 +53,10 @@ WEBSITE
     For now, all documentation is on the website. Everything will be POD one
     day, but until that day, you will need to visit http://plp.juerd.nl/
 
+FAQ
+    A lot of questions are asked often, so before asking yours, please read
+    the FAQ that is located at http://plp.juerd.nl/faq.plp
+
 NO WARRANTY
     No warranty, no guarantees. Use PLP at your own risk, as I disclaim all
     responsibility.

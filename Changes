@@ -1,3 +1,6 @@
+3.12 - May 18, 2002
+- Fixed strict-violation in PLP.pm that happened only without mod_perl
+
 3.11 - May 18, 2002
 - Fixed all tie-stuff by reverting a change. Symbol.pm's delete_package doesn't
   delete a package in the way I thought it did.

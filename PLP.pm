@@ -10,7 +10,7 @@ use PLP::Tie::Print;
 
 use strict;
 
-our $VERSION = '3.11';
+our $VERSION = '3.12';
 
 # subs in this package:
 #  sendheaders                      Send headers
@@ -194,10 +194,10 @@ sub mod_perl_init {
     $ENV{PLP_FILENAME} = my $filename = $r->filename;
     
     unless (-f $filename) {
-	return Apache::Constants::NOT_FOUND;
+	return Apache::Constants::NOT_FOUND();
     }
     unless (-r _) {
-	return Apache::Constants::FORBIDDEN;
+	return Apache::Constants::FORBIDDEN();
     }
     
     (my $dir) = $filename =~ m!(.*)/!s;
@@ -254,7 +254,8 @@ sub handler {
 	return $ret;
     }
     start();
-    return Apache::Constants::OK;
+    no strict 'subs';
+    return Apache::Constants::OK();
 }
 
 1;
@@ -324,6 +325,11 @@ for speeds comparable to those of PHP, but can also be run as a CGI script.
 
 For now, all documentation is on the website. Everything will be POD one day,
 but until that day, you will need to visit http://plp.juerd.nl/
+
+=head1 FAQ
+
+A lot of questions are asked often, so before asking yours, please read the 
+FAQ that is located at http://plp.juerd.nl/faq.plp
 
 =head1 NO WARRANTY
 
