@@ -14,7 +14,7 @@ use Cwd ();
 
 use strict;
 
-our $VERSION = '3.17';
+our $VERSION = '3.18';
 
 # Subs in this package:
 #  _default_error($plain, $html)    Default error handler
@@ -68,7 +68,7 @@ sub cgi_init {
 
     delete @ENV{
 	qw(PATH_TRANSLATED SCRIPT_NAME SCRIPT_FILENAME PATH_INFO),
-        grep { /^REDIRECT_/ } keys %ENV
+        grep /^REDIRECT_/, keys %ENV
     };
 
     $ENV{PATH_INFO} = $path_info if defined $path_info;
@@ -261,14 +261,14 @@ sub sendheaders () {
 		my $part = $1;
 		if ($part eq '<:=' and not $in_block) {
 		    $in_block = 2;
-		    $source .= "\cQ, ";
+		    $source .= "\cQ, (";
 		} elsif ($part eq '<:' and not $in_block) {
 		    $in_block = 1;
 		    $source .= "\cQ; ";
 		} elsif ($part eq ':>' and $in_block) {
 		    $source .= (
 			  $in_block == 2
-			? ", q\cQ"               # 2
+			? "), q\cQ"              # 2
 			: "; $PLP::print q\cQ"   # 1
 		    );
 		    $in_block = 0;
@@ -284,6 +284,14 @@ sub sendheaders () {
 		    $source .= $part;
 		}
 	    }
+	}
+	
+	if ($in_block) {
+	    $source .= (
+		  $in_block == 2
+		? "), q\cQ"              # 2
+		: "; $PLP::print q\cQ"   # 1
+	    );
 	}
 
 	if ($use_cache) {

@@ -1,3 +1,10 @@
+3.18 - October 16, 2002:
+- Fixed the class for tied headers. Content_Type is now really converted to
+  Content-Type, as explained in L<PLP::Fields>
+- Added some bits to L<PLP::HowTo>
+- Closing :> is now optional (which is handy for code-only PLP documents that
+  should not send additional whitespace)
+
 3.17 - August 21, 2002:
 - More cleanups
 - %get is now built on script start, no longer on first access
@@ -5,10 +12,10 @@
 - Small documentation fixes
 - Setting a header when headers are already sent now tells you where output
   started
-- Speedup in source()
+- Speeded up source()
 
 3.16 - May 21, 2002:
-- Clean up a little
+- Cleaned up a little
 - Changed compile-time <(...)> includes to use paths relative to the file they
   are included by. Include() of course still uses paths relative to the current
   working directory
