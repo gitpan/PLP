@@ -1,0 +1,62 @@
+NAME
+    PLP - Perl in HTML pages
+
+MODULE INSTALLATION
+
+    perl Makefile.PL
+    make
+    make install
+
+SYNOPSIS
+  mod_perl installation
+    * httpd.conf (for mod_perl setup)
+                  <Files *.plp>
+                      SetHandler perl-script
+                      PerlHandler PLP
+                      PerlSendHeader On
+                  </Files>
+
+                  # Who said CGI was easier to set up? :)
+
+  CGI installation
+    * /foo/bar/plp.cgi (local filesystem address)
+                  #!/usr/bin/perl
+                  use PLP;
+                  PLP::everything();
+
+    * httpd.conf (for CGI setup)
+                  ScriptAlias /foo/bar/ /PLP_COMMON/
+                  <Directory /foo/bar/>
+                      AllowOverride None
+                      Options +ExecCGI
+                      Order allow,deny
+                      Allow from all
+                  </Directory>
+                  AddHandler plp-document plp
+                  Action plp-document /PLP_COMMON/plp.cgi
+
+  Test script (test.plp)
+        <html><body>
+        <:
+            print "Hurrah, it works!<br>" for 1..10;
+        :>
+        </body></html>
+
+DESCRIPTION
+    PLP is yet another Perl embedder, primarily for HTML documents. Unlike
+    with other Perl embedders, there is no need to learn a meta-syntax or
+    object model: one can just use the normal Perl constructs. PLP runs
+    under mod_perl for speeds comparable to those of PHP, but can also be
+    run as a CGI script.
+
+WEBSITE
+    For now, all documentation is on the website. Everything will be POD one
+    day, but until that day, you will need to visit http://plp.juerd.nl/
+
+NO WARRANTY
+    No warranty, no guarantees. Use PLP at your own risk, as I disclaim all
+    responsibility.
+
+AUTHOR
+    Juerd Waalboer <juerd@juerd.nl>
+

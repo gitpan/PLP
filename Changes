@@ -1,0 +1,41 @@
+3.10 - May 18, 2002
+- First standardized module distribution, to allow easy distribution via CPAN
+- Caution: installation procedure has changed because of that!
+- Moved all code from plp.cgi to PLP.pm, and made PLP.pm use strict (it was
+  strict compliant, but didn't actually use the pragma).
+- Added mod_perl handler() for extremely easy installation :)
+- Added some documentation (perldoc PLP) with installation instructions
+- Moved a few lines from init() to start()
+- Added comments in PLP.pm
+- Uses Symbol.pm to delete the package (Symbol is in the Perl distr.)
+
+3.06 - April 23, 2002
+- Added PLP_END functionality to simulate END { ... } for mod_perl
+- Fixed header sending in case PLP::Tie::Print->PRINT never happened
+- Added an override for exit(), to avoid needless debugging output in mod_perl
+
+3.05 - April 12, 2002
+- Fixed a potential bug in PLP::source and PLP::Functions::Counter
+
+3.04 - April 11, 2002
+- $PLP::DEBUG works again (set to 1 for $@ output, 2 for plain text+headers,
+  3 for both)
+- $PLP::ERROR is now a subref that can be overridden (April 12: see FAQ for
+  info)
+
+3.03 - April 11, 2002
+- Removed a bug that made sending alternative headers impossible. Sorry!
+- By the way, remember that if you want to send headers, the "<:" have to be
+  the very first characters in the file, with no white space in front of it!
+
+3.02 - April 11, 2002
+- Efficiency improvement by caching initialisation in PLP.pm
+
+3.01 - April 10, 2002
+- Bugfixes: include() used strict, fixed some typos, logging
+- Improved: error reporting
+
+3.00 - April 9, 2002
+- New release, a lot has been done from scratch again, this time following 
+  strict rules and mod_perl compatible. It's also a lot faster than 2.x.
+
