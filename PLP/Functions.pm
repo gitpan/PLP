@@ -4,189 +4,148 @@ use base 'Exporter';
 use Fcntl qw(:flock);
 use strict;
 
-our @EXPORT = qw/HiddenFields Entity DecodeURI EncodeURI Entity include PLP_END
-                 AddCookie ReadFile WriteFile AutoURL Counter Include exit/;
+our @EXPORT = qw/Entity DecodeURI EncodeURI Include include PLP_END
+                 AddCookie ReadFile WriteFile AutoURL Counter exit/;
 
 sub Include ($) {
-    no strict;
-    $PLP::file = $_[0];
-    $PLP::inA = 0;
-    $PLP::inB = 0;
-    local $@;
-    eval 'package PLP::Script; ' . PLP::source($PLP::file, 0, join ' ', (caller)[2,1]);
-    if ($@) {
-	PLP::Functions::exit() if $@ =~ /\cS\cT\cO\cP/;
-	PLP::error($@, 1);
-    }
+	no strict;
+	$PLP::file = $_[0];
+	$PLP::inA = 0;
+	$PLP::inB = 0;
+	local $@;
+	eval 'package PLP::Script; ' . PLP::source($PLP::file, 0, join ' ', (caller)[2,1]);
+	if ($@) {
+		PLP::Functions::exit() if $@ =~ /\cS\cT\cO\cP/;
+		PLP::error($@, 1);
+	}
 }
 
 sub include ($) {
-    goto &Include;
+	goto &Include;
 }
 
 sub exit (;$) {
-    die "\cS\cT\cO\cP\n";
+	die "\cS\cT\cO\cP\n";
 }
 
 sub PLP_END (&) {
-    push @PLP::END, shift;
-}
-
-sub HiddenFields ($@) {
-    my $hash = shift;
-    my %saves;
-    @saves{@_} = ();
-    for (keys %$hash) {
-	print qq{<input type=hidden name="$_" value="$hash->{$_}">}
-	    unless exists $saves{$_};
-    }
+	push @PLP::END, shift;
 }
 
 sub Entity (@) {
-    my $ref;
-    my @copy;    
-    if (defined wantarray) {
-	@copy = @_;
-	$ref = \@copy;
-    } else {
-	$ref = \@_;
-    }
-    for (@$ref) {
-	eval {
-	    s/&/&amp;/g;
-	    s/\"/&quot;/g;
-	    s/</&lt;/g;
-	    s/>/&gt;/g;
-	    s/\n/<br>\n/g;
-	    s/\t/&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;/g;
-	    s/  /&nbsp;&nbsp;/g;
-	};
-#	if ($@){ return defined wantarray ? @_ : undef }
-    }
-    return defined wantarray ? (wantarray ? @$ref : "@$ref") : undef;
+	my $ref = defined wantarray ? [@_] : \@_;
+	for (@$ref) {
+		eval {
+			s/&/&amp;/g;
+			s/"/&quot;/g;
+			s/</&lt;/g;
+			s/>/&gt;/g;
+			s/\n/<br>\n/g;
+			s/\t/&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;/g;
+			s/  /&nbsp;&nbsp;/g;
+		};
+	}
+	return defined wantarray ? (wantarray ? @$ref : "@$ref") : undef;
 }
 
 sub DecodeURI (@) {
-    # Browsers do s/ /+/ - I don't care about RFC's, but I do care about real-life
-    # situations.
-    my @r;
-    local $_;    
-    for (@_) {
-	s/\+/%20/g;
-	my $dec = $_;
-	$dec =~ s/%([0-9A-Fa-f][0-9A-Fa-f])/chr hex $1/ge;
-	if (defined wantarray) {
-	    push @r, $dec;
-	} else {
-	    eval {$_ = $dec}; 
-#	    return undef if $@; # ;DecodeURI("foo");
+	my $ref = defined wantarray ? [@_] : \@_;
+	for (@$ref) {
+		eval {
+			s/\+/%20/g;  # Browsers do y/ /+/ - I don't care about RFC's, but
+			             # I do care about real-life situations.
+			s/%([0-9A-Fa-f][0-9A-Fa-f])/chr hex $1/ge;
+		};
 	}
-    }
-    return defined wantarray ? (wantarray ? @r : "@r") : undef;
+	return defined wantarray ? (wantarray ? @$ref : "@$ref") : undef;
 }
 
 sub EncodeURI (@) {
-    my @r;
-    local $_;
-    for (@_) {
-        my $esc = $_;
-	$esc =~ 
-	    s{
-		([^\/?:@\$,A-Za-z0-9\-_.!~*\'()])
-	    }{
-		sprintf("%%%02x", ord($1))
-	    }xge;
-        if (defined wantarray) {
-            push @r, $esc;
-        } else {
-	    eval {$_ = $esc};
-#	    return undef if $@; # ;EncodeURI("foo");
+	my $ref = defined wantarray ? [@_] : \@_;
+	for (@$ref) {
+		eval {
+			s{([^A-Za-z0-9\-_.!~*'()/?:@\$,])}{sprintf("%%%02x", ord $1)}ge;
+		};
 	}
-    }
-    return defined wantarray ? (wantarray ? @r : "@r") : undef;
+	return defined wantarray ? (wantarray ? @$ref : "@$ref") : undef;
 }
 
 sub AddCookie ($) {
-    if ($PLP::Script::header{'Set-Cookie'}) {
-	$PLP::Script::header{'Set-Cookie'} .= "\nSet-Cookie: $_[0]";
-    } else {
-	$PLP::Script::header{'Set-Cookie'} = $_[0];
-    }
+	if ($PLP::Script::header{'Set-Cookie'}) {
+		$PLP::Script::header{'Set-Cookie'} .= "\nSet-Cookie: $_[0]";
+	} else {
+		$PLP::Script::header{'Set-Cookie'} = $_[0];
+	}
 }
 
 sub ReadFile ($) {
-    local $/ = undef;
-    open (my $fh, '<', $_[0]) or do {
-	PLP::error("Cannot open $_[0] for reading ($!)", 1);
-	return undef;
-    };
-    my $r = readline $fh;
-    close $fh;
-    return $r;
+	local $/ = undef;
+	open (my $fh, '<', $_[0]) or do {
+		PLP::error("Cannot open $_[0] for reading ($!)", 1);
+		return undef;
+	};
+	my $r = readline $fh;
+	close $fh;
+	return $r;
 }
 
 sub WriteFile ($$) {
-    open (my $fh, '>', $_[0]) or do {
-	PLP::error("Cannot open $_[0] for writing ($!)", 1);
-	return undef;
-    };
-    flock $fh, LOCK_EX;
-    print $fh $_[1] or do {
-	PLP::error("Cannot write to $_[0] ($!)");
-	return undef;
-    };
-    close $fh or do {
-	PLP::error("Cannot close $_[0] ($!)");
-	return undef;
-    };
-    return 1;
+	open (my $fh, '>', $_[0]) or do {
+		PLP::error("Cannot open $_[0] for writing ($!)", 1);
+		return undef;
+	};
+	flock $fh, LOCK_EX;
+	print $fh $_[1] or do {
+		PLP::error("Cannot write to $_[0] ($!)");
+		return undef;
+	};
+	close $fh or do {
+		PLP::error("Cannot close $_[0] ($!)");
+		return undef;
+	};
+	return 1;
 }
 
 sub Counter ($) {
-    local $/ = undef;
-    my             $fh;
-    open           $fh, '+<', $_[0] or
-    open	   $fh, '>',  $_[0] or return undef;
-    flock          $fh, 2;
-    seek           $fh, 0, 0;
-    my $counter = <$fh>;
-    seek           $fh, 0, 0;
-    truncate       $fh, 0;
-    print          $fh ++$counter   or return undef;
-    close          $fh              or return undef;
-    return $counter;
+	local $/ = undef;
+	my             $fh;
+	open           $fh, '+<', $_[0] or
+	open           $fh, '>',  $_[0] or return undef;
+	flock          $fh, 2;
+	seek           $fh, 0, 0;
+	my $counter = <$fh>;
+	seek           $fh, 0, 0;
+	truncate       $fh, 0;
+	print          $fh ++$counter   or return undef;
+	close          $fh              or return undef;
+	return $counter;
 }
 
 sub AutoURL ($) {
-    # This sub assumes your string does not match /(["<>])\cC\1/
-    my $ref;    
-    if (defined wantarray){
-	$ref = \(my $copy = $_[0]);
-    }else{
-	$ref = \$_[0];
-    }
-    eval {
-	$$ref =~ s/&quot;/"\cC"/g; # Single characters are easier to match :)
-	$$ref =~ s/&gt;/>\cC>/g;   # so we can just use a character class []
-	$$ref =~ s/&lt;/<\cC</g;
-	
-	# Now this is a big, ugly regex! But hey - it works :)    
-	$$ref =~ s{((\w+://|www\.|WWW\.)[a-zA-Z0-9\.\@:-]+[^\"\'>< \r\t\n]*)}{
-	    local $_ = $1;
-	    my $scheme = $2;
-	    s/// if (my $trailing) = /([\.,!\?\(\)\[\]]+$)/;
-	    s/&(?!\x23?\w+;)/&amp;/g;
-	    s/\"/&quot;/g;
-	    my $href = ($scheme =~ /www\./i ? "http://$_" : $_);
-	    qq{<a href="$href" target="_blank">$_</a>$trailing};
-	}eg;
+	# This sub assumes your string does not match /(["<>])\cC\1/
+	my $ref = defined wantarray ? \(my $copy = $_[0]) : \$_[0];
+	eval {
+		$$ref =~ s/&quot;/"\cC"/g; # Single characters are easier to match :)
+		$$ref =~ s/&gt;/>\cC>/g;   # so we can just use a character class []
+		$$ref =~ s/&lt;/<\cC</g;
+		
+		# Now this is a big, ugly regex! But hey - it works :)
+		$$ref =~ s{((\w+://|www\.|WWW\.)[a-zA-Z0-9\.\@:-]+[^\"\'>< \r\t\n]*)}{
+			local $_ = $1;
+			my $scheme = $2;
+			s/// if (my $trailing) = /([\.,!\?\(\)\[\]]+$)/;
+			s/&(?!\x23?\w+;)/&amp;/g;
+			s/\"/&quot;/g;
+			my $href = ($scheme =~ /www\./i ? "http://$_" : $_);
+			qq{<a href="$href" target="_blank">$_</a>$trailing};
+		}eg;
 
-	$$ref =~ s/"\cC"/&quot;/g;
-	$$ref =~ s/>\cC>/&gt;/g;
-	$$ref =~ s/<\cC</&lt;/g;
-    };
-    if ($@){ return defined wantarray ? @_ : undef }
-    return defined wantarray ? $$ref : undef;
+		$$ref =~ s/"\cC"/&quot;/g;
+		$$ref =~ s/>\cC>/&gt;/g;
+		$$ref =~ s/<\cC</&lt;/g;
+	};
+	if ($@){ return defined wantarray ? @_ : undef }  # return original on error
+	return defined wantarray ? $$ref : undef;
 }
 
 1;
@@ -247,23 +206,32 @@ You should use this function instead of Perl's built-in C<END> blocks, because t
 
 =item Entity LIST
 
-Replaces HTML syntax characters by HTML entities, so they can be displayed literally. You should always use this on user input (or database output), to avoid cross-site-scripting vurnerabilities. This function does not do everything the L<HTML::Entity> does.
+Replaces HTML syntax characters by HTML entities, so they can be displayed literally. You should always use this when displaying user input (or database output), to avoid cross-site-scripting vurnerabilities.
 
 In void context, B<changes> the values of the given variables. In other contexts, returns the changed versions.
 
     <: print Entity($user_input); :>
 
+Be warned that this function also HTMLizes consecutive whitespace and newlines (using &nbsp; and <br> respectively).
+For simple escaping, use L<XML::Quote>. To escape high-bit characters as well, use L<HTML::Entities>.
+
 =item EncodeURI LIST
 
-Replaces characters by their %-encoded values.
+Encodes URI strings according to RFC 3986. All disallowed characters are replaced by their %-encoded values.
 
 In void context, B<changes> the values of the given variables. In other contexts, returns the changed versions.
 
     <a href="/foo.plp?name=<:= EncodeURI($name) :>">Link</a>
 
+Note that the following reserved characters are I<not> percent-encoded, even though they may have a special meaning in URIs:
+
+	/ ? : @ $
+
+This should be safe for escaping query values (as in the example above), but it may be a better idea to use L<URI::Escape> instead.
+
 =item DecodeURI LIST
 
-Decodes %-encoded strings.
+Decodes %-encoded strings. Unlike L<URI::Escape>, it also translates + characters to spaces (as browsers use those).
 
 In void context, B<changes> the values of the given variables. In other contexts, returns the changed versions.
 
@@ -298,6 +266,8 @@ Adds a Set-Cookie header. STRING must be a valid Set-Cookie header value.
 =head1 AUTHOR
 
 Juerd Waalboer <juerd@cpan.org>
+
+Current maintainer: Mischa POSLAWSKY <shiar@cpan.org>
 
 =cut
 

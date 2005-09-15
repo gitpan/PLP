@@ -10,11 +10,11 @@ use PLP::Tie::Print;
 
 use File::Basename ();
 use File::Spec;
-use Cwd ();
+#use Cwd ();
 
 use strict;
 
-our $VERSION = '3.18';
+our $VERSION = '3.19';
 
 # Subs in this package:
 #  _default_error($plain, $html)    Default error handler
@@ -24,7 +24,7 @@ our $VERSION = '3.18';
 #  everything                       Do everything: CGI
 #  handler($r)                      Do everything: mod_perl
 #  mod_perl_init($r)                Initialization for mod_perl
-#  mod_perl_print		    Faster printing for mod_perl
+#  mod_perl_print                   Faster printing for mod_perl
 #  sendheaders                      Send headers
 #  source($path, $level, $linespec) Read and parse .plp files
 #  start                            Start the initialized PLP script
@@ -172,7 +172,7 @@ sub mod_perl_init {
 
 # FAST printing under mod_perl
 sub mod_perl_print {
-    return if @_ == 1 and not length $_[0];
+	return unless grep length, @_;
     PLP::sendheaders() unless $PLP::sentheaders;
     $PLP::r->print(@_);
 }
@@ -354,7 +354,7 @@ PLP - Perl in HTML pages
         SetHandler perl-script
         PerlHandler PLP
         PerlSendHeader On
-	PerlSetVar PLPcache On
+        PerlSetVar PLPcache On
     </Files>
 
     # Who said CGI was easier to set up? :)
@@ -375,10 +375,10 @@ PLP - Perl in HTML pages
 
     ScriptAlias /foo/bar/ /PLP_COMMON/
     <Directory /foo/bar/>
-	AllowOverride None
-	Options +ExecCGI
-	Order allow,deny
-	Allow from all
+        AllowOverride None
+        Options +ExecCGI
+        Order allow,deny
+        Allow from all
     </Directory>
     AddHandler plp-document plp
     Action plp-document /PLP_COMMON/plp.cgi
@@ -533,9 +533,11 @@ FAQ at L<PLP::FAQ>. Some examples can be found at L<PLP::HowTo>.
 No warranty, no guarantees. Use PLP at your own risk, as I disclaim all
 responsibility.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Juerd Waalboer <juerd@cpan.org>
+Currently maintained by Mischa POSLAWSKY <perl@shiar.org>
+
+Originally by Juerd Waalboer <juerd@cpan.org>
 
 =head1 SEE ALSO
 

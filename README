@@ -5,6 +5,7 @@ MODULE INSTALLATION
 
     perl Makefile.PL
     make
+    make test
     make install
 
 SYNOPSIS
@@ -139,7 +140,9 @@ DESCRIPTION
     $header_name} before any output. This means the opening "<:" have to be
     the first characters in your document, without any whitespace in front
     of them. If you start output and try to set headers later, an error
-    message will appear telling you on which line your output started.
+    message will appear telling you on which line your output started. An
+    alternative way of setting headers is using Perl's BEGIN blocks. BEGIN
+    blocks are executed as soon as possible, before anything else.
 
     Because the interpreter that mod_perl uses never ends, "END { }" blocks
     won't work properly. You should use "PLP_END { };" instead. Note that
@@ -155,17 +158,19 @@ DESCRIPTION
     environments, like CGI.pm. Read PLP::Fields for information more about
     this.
 
-FAQ
+FAQ and HowTo
     A lot of questions are asked often, so before asking yours, please read
-    the FAQ at PLP::FAQ.
+    the FAQ at PLP::FAQ. Some examples can be found at PLP::HowTo.
 
 NO WARRANTY
     No warranty, no guarantees. Use PLP at your own risk, as I disclaim all
     responsibility.
 
-AUTHOR
-    Juerd Waalboer <juerd@juerd.nl>
+AUTHORS
+    Currently maintained by Mischa POSLAWSKY <perl@shiar.org>
+
+    Originally by Juerd Waalboer <juerd@cpan.org>
 
 SEE ALSO
-    PLP::Functions, PLP::Fields, PLP::FAQ
+    PLP::Functions, PLP::Fields, PLP::FAQ, PLP::HowTo
 

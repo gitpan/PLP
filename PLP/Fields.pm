@@ -124,5 +124,7 @@ when sending the headers is the one you used first. The following are equal:
 
 Juerd Waalboer <juerd@cpan.org>
 
+Current maintainer: Mischa POSLAWSKY <shiar@cpan.org>
+
 =cut
 

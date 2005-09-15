@@ -1,8 +1,9 @@
 " Vim syntax file
 " Language:	PLP (Perl in HTML)
-" Maintainer:	Juerd <juerd@juerd.nl>
+" Maintainer:	Shiar <perl@shiar.org>
 " Last Change:	2002 May 20 
 " Cloned From:	aspperl.vim
+" Author:	Juerd <juerd@juerd.nl>
 
 " Add to filetype.vim the following line (without quote sign):
 " au BufNewFile,BufRead *.plp setf plp

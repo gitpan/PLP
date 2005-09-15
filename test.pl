@@ -1,20 +1,38 @@
+use strict;
 
-# TODO - Write tests.
+use Test::More tests => 6;
 
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.pl'
+BEGIN { use_ok('PLP') }
 
-#########################
+PLP::Functions->import();
 
-# change 'tests => 1' to 'tests => last_test_to_print';
+is(
+	Entity(q{<a test="'&'"/>}),
+	"&lt;a test=&quot;'&amp;'&quot;/&gt;",
+	'Entity escaping'
+);
 
-use Test;
-BEGIN { plan tests => 1 };
-use PLP;
-ok(1); # If we made it this far, we're ok.
+is(
+	Entity(" . .  .   .\t. \n"),
+	" . .&nbsp;&nbsp;.&nbsp;&nbsp; .&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;. <br>\n",
+	'Entity formatting'
+);
 
-#########################
+is(
+	EncodeURI("/test.plp?f00=~_a&b!\n "),
+	'/test.plp?f00%3d~_a%26b!%0a%20',
+	'EncodeURI'
+);
 
-# Insert your test code below, the Test module is use()ed here so read
-# its man page ( perldoc Test ) for help writing this test script.
+is(
+	DecodeURI('?f0%30+%20b%61r!'),
+	'?f00  bar!',
+	'DecodeURI'
+);
+
+is(
+	DecodeURI('%0A%0a%a %000 %fg%%fF'."\377"),
+	"\n\n%a \0000 %fg%\377\377",
+	'DecodeURI 2'
+);
 

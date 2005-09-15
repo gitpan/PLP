@@ -8,7 +8,8 @@ PLP::FAQ - Frequently Asked Questions about PLP
 
 =item What does PLP stand for?
 
-PerlPage. The name used to be HTMPL, but HyperText Markup with Perl Language was too long.
+PerlPage. The name used to be HTMPL, but HyperText Markup with Perl Language
+was too long.
 
 =item Is PLP hard to install?
 
@@ -48,17 +49,17 @@ design, you can add a little more speed.
 
 =item Can I use Perl's CGI module with PLP?
 
-You certainly can! If you do not want %get and %post and the like, just not use
-them. They will be generated on first access, so if you never access them, the
-hashes are never filled.
+You certainly can! If you do not want %get and %post and the like, just don't
+use them. They will be generated on first access, so if you never access them,
+the hashes are never filled.
 
 If you want to use CGI.pm's header functions, C<select STDOUT;> first, to break
 out of PLP's tied C<PLPOUT> filehandle.
 
 =item Why does C<< <($filename)> >> not work?
 
-C<< <(...)> >> is a compile-time tag, opposed to C<include()>, which is evaluated at
-run-time. At compile time, variables are not yet known, and PLP will try to
+C<< <(...)> >> is a compile-time tag, opposed to C<include()>, which is evaluated
+at run-time. At compile time, variables are not yet known, and PLP will try to
 include a file literally called C<$filename>.
 
     <: $filename = 'foo.inc.plp'; include($filename); :>

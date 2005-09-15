@@ -96,7 +96,7 @@ mod_rewrite to set the environment variable. Short answer: just use mod_perl.)
 =head1 FEEDBACK
 
 If you have good, simple examples of how to do common things with PLP, please
-send them! <juerd@cpan.org>
+send them! <perl@shiar.org>
 
 =cut
 

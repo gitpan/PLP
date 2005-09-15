@@ -18,7 +18,7 @@ sub WRITE { undef }
 
 sub PRINT {
     shift;
-    return if @_ == 1 and not length $_[0];
+    return unless grep length, @_;
     PLP::sendheaders() unless $PLP::sentheaders;
     print STDOUT @_;
     select STDOUT;
@@ -26,6 +26,8 @@ sub PRINT {
 
 sub PRINTF {
     shift;
+    return unless length $_[0];
+    PLP::sendheaders() unless $PLP::sentheaders;
     printf STDOUT @_;
     select STDOUT;
 }
