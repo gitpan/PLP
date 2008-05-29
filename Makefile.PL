@@ -8,8 +8,10 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME          => 'PLP',
-	VERSION_FROM  => 'PLP.pm',
+	VERSION_FROM  => 'lib/PLP.pm',
 	PREREQ_PM     => {},
-	ABSTRACT_FROM => 'PLP.pm',
+	ABSTRACT_FROM => 'lib/PLP.pm',
+	NO_META       => 1,
+	(LICENSE      => 'mit') x ($ExtUtils::MakeMaker::VERSION > 6.30),
 	AUTHOR        => 'Mischa POSLAWSKY <perl@shiar.org>',
 );

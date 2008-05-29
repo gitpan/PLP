@@ -1,3 +1,13 @@
+3.20 - May 29, 2008:
+- MIT license
+- FastCGI support
+- mod_perl2 support (but not recommended; read docs!)
+- Lighttpd and Apache2 support (either CGI or FastCGI)
+- Seperate modules for backend-specific code
+- Documentation updates
+- Fix html of default error message
+- Example plpinfo.plp, modeled after phpinfo
+
 3.19 - September 15, 2005:
 - New maintainer
 - Send headers when using C<printf> to start output

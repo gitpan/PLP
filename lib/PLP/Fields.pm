@@ -6,63 +6,59 @@ use strict;
 # and %header in PLP::Script. Also generates %cookie immediately.
 sub doit {
 
-    # %get
-    
-    my $get = \%PLP::Script::get;
-    if (length $ENV{QUERY_STRING}){
-	for (split /[&;]/, $ENV{QUERY_STRING}) {
-	    my @keyval = split /=/, $_, 2;
-	    PLP::Functions::DecodeURI(@keyval);
-	    $get->{$keyval[0]} = $keyval[1] unless $keyval[0] =~ /^\@/;
-	    push @{ $get->{ '@' . $keyval[0] } }, $keyval[1];
+	# %get
+	
+	my $get = \%PLP::Script::get;
+	if (length $ENV{QUERY_STRING}){
+		for (split /[&;]/, $ENV{QUERY_STRING}) {
+			my @keyval = split /=/, $_, 2;
+			PLP::Functions::DecodeURI(@keyval);
+			$get->{$keyval[0]} = $keyval[1] unless $keyval[0] =~ /^\@/;
+			push @{ $get->{ '@' . $keyval[0] } }, $keyval[1];
+		}
 	}
-    }
 
-    # %post
+	# %post
 
-    tie %PLP::Script::post, 'PLP::Tie::Delay', 'PLP::Script::post', sub {
-	my %post;
-	my $post;
-	
-	return \%post if $ENV{CONTENT_TYPE} !~
-	    m!^(?:application/x-www-form-urlencoded|$)!;
-	
-	if ($ENV{MOD_PERL}) {
-	    $post = Apache->request->content;
-	} else {
-	    read *STDIN, $post, $ENV{CONTENT_LENGTH};
+	tie %PLP::Script::post, 'PLP::Tie::Delay', 'PLP::Script::post', sub {
+		my %post;
+		my $post;
+		
+		return \%post if $ENV{CONTENT_TYPE} !~
+			m!^(?:application/x-www-form-urlencoded|$)!;
+		
+		$post = $PLP::read->($ENV{CONTENT_LENGTH}) if $ENV{CONTENT_LENGTH};
+		
+		return \%post unless defined $post and length $post;
+		
+		for (split /&/, $post) {
+			my @keyval = split /=/, $_, 2;
+			PLP::Functions::DecodeURI(@keyval);
+			$post{$keyval[0]} = $keyval[1] unless $keyval[0] =~ /^\@/;
+			push @{ $post{ '@' . $keyval[0] } }, $keyval[1];
+		}
+		
+		return \%post;
+	};
+
+	# %fields
+
+	tie %PLP::Script::fields, 'PLP::Tie::Delay', 'PLP::Script::fields', sub {
+		return { %PLP::Script::get, %PLP::Script::post };
+	};
+
+	# %header
+
+	tie %PLP::Script::header, 'PLP::Tie::Headers';
+
+	# %cookie
+
+	if (defined $ENV{HTTP_COOKIE} and length $ENV{HTTP_COOKIE}) {
+		for (split /; ?/, $ENV{HTTP_COOKIE}) {
+			my @keyval = split /=/, $_, 2;
+			$PLP::Script::cookie{$keyval[0]} ||= $keyval[1];
+		}
 	}
-	
-	return \%post unless defined $post and length $post;
-	
-	for (split /&/, $post) {
-	    my @keyval = split /=/, $_, 2;
-	    PLP::Functions::DecodeURI(@keyval);
-	    $post{$keyval[0]} = $keyval[1] unless $keyval[0] =~ /^\@/;
-	    push @{ $post{ '@' . $keyval[0] } }, $keyval[1];
-	}
-	
-	return \%post;
-    };
-
-    # %fields
-
-    tie %PLP::Script::fields, 'PLP::Tie::Delay', 'PLP::Script::fields', sub {
-	return { %PLP::Script::get, %PLP::Script::post };
-    };
-
-    # %header
-
-    tie %PLP::Script::header, 'PLP::Tie::Headers';
-
-    # %cookie
-
-    if (defined $ENV{HTTP_COOKIE} and length $ENV{HTTP_COOKIE}) {
-	for (split /; ?/, $ENV{HTTP_COOKIE}) {
-	    my @keyval = split /=/, $_, 2;
-	    $PLP::Script::cookie{$keyval[0]} ||= $keyval[1];
-	}
-    }
 }
 
 1;

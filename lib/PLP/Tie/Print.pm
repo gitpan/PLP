@@ -17,19 +17,19 @@ sub TIEHANDLE { bless \my $dummy, $_[0] }
 sub WRITE { undef }
 
 sub PRINT {
-    shift;
-    return unless grep length, @_;
-    PLP::sendheaders() unless $PLP::sentheaders;
-    print STDOUT @_;
-    select STDOUT;
+	shift;
+	return unless grep length, @_;
+	PLP::sendheaders() unless $PLP::sentheaders;
+	print STDOUT @_;
+	select STDOUT;
 }
 
 sub PRINTF {
-    shift;
-    return unless length $_[0];
-    PLP::sendheaders() unless $PLP::sentheaders;
-    printf STDOUT @_;
-    select STDOUT;
+	shift;
+	return unless length $_[0];
+	PLP::sendheaders() unless $PLP::sentheaders;
+	printf STDOUT @_;
+	select STDOUT;
 }
 
 sub READ { undef }

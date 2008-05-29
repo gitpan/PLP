@@ -52,8 +52,8 @@ sub DecodeURI (@) {
 	my $ref = defined wantarray ? [@_] : \@_;
 	for (@$ref) {
 		eval {
-			s/\+/%20/g;  # Browsers do y/ /+/ - I don't care about RFC's, but
-			             # I do care about real-life situations.
+			tr/+/ /;  # Browsers do tr/ /+/ - I don't care about RFCs, but
+			          # I do care about real-life situations.
 			s/%([0-9A-Fa-f][0-9A-Fa-f])/chr hex $1/ge;
 		};
 	}
@@ -213,7 +213,8 @@ In void context, B<changes> the values of the given variables. In other contexts
     <: print Entity($user_input); :>
 
 Be warned that this function also HTMLizes consecutive whitespace and newlines (using &nbsp; and <br> respectively).
-For simple escaping, use L<XML::Quote>. To escape high-bit characters as well, use L<HTML::Entities>.
+For simple escaping, use L<XML::Quote|XML::Quote>.
+To escape high-bit characters as well, use L<HTML::Entities|HTML::Entities>.
 
 =item EncodeURI LIST
 
@@ -227,11 +228,13 @@ Note that the following reserved characters are I<not> percent-encoded, even tho
 
 	/ ? : @ $
 
-This should be safe for escaping query values (as in the example above), but it may be a better idea to use L<URI::Escape> instead.
+This should be safe for escaping query values (as in the example above),
+but it may be a better idea to use L<URI::Escape|URI::Escape> instead.
 
 =item DecodeURI LIST
 
-Decodes %-encoded strings. Unlike L<URI::Escape>, it also translates + characters to spaces (as browsers use those).
+Decodes %-encoded strings. Unlike L<URI::Escape|URI::Escape>,
+it also translates + characters to spaces (as browsers use those).
 
 In void context, B<changes> the values of the given variables. In other contexts, returns the changed versions.
 
