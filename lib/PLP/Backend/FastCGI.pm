@@ -1,6 +1,7 @@
 package PLP::Backend::FastCGI;
 
 use strict;
+use warnings;
 
 use PLP::Backend::CGI ();
 use FCGI;

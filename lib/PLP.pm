@@ -12,8 +12,9 @@ use File::Basename ();
 use File::Spec;
 
 use strict;
+use warnings;
 
-our $VERSION = '3.20';
+our $VERSION = '3.21';
 
 # Subs in this package:
 #  _default_error($plain, $html)    Default error handler
@@ -82,7 +83,7 @@ sub error {
 # Wrap old request handlers.
 sub everything {
 	require PLP::Backend::CGI;
-	PLP::Backend::CGI::everything();
+	PLP::Backend::CGI->everything();
 }
 sub handler {
 	require PLP::Backend::Apache;
@@ -93,7 +94,10 @@ sub handler {
 sub sendheaders () {
 	$PLP::sentheaders ||= [ caller 1 ? (caller 1)[1, 2] : (caller)[1, 2] ];
 	print STDOUT "Content-Type: text/plain\n\n" if $PLP::DEBUG & 2;
-	print STDOUT map("$_: $PLP::Script::header{$_}\n", keys %PLP::Script::header), "\n";
+	while (my ($header, $values) = each %PLP::Script::header) {
+		print STDOUT "$header: $_\n" for split /\n/, $values;
+	}
+	print STDOUT "\n";
 }
 
 {
@@ -235,10 +239,10 @@ sub start {
 
 		# No lexicals may exist at this point.
 		
-		eval qq{ package PLP::Script; $PLP::code; };
+		eval qq{ package PLP::Script; no warnings; $PLP::code; };
 		PLP::error($@, 1) if $@ and $@ !~ /\cS\cT\cO\cP/;
 
-		eval   { package PLP::Script; $_->() for reverse @PLP::END };
+		eval   { package PLP::Script; no warnings; $_->() for reverse @PLP::END };
 		PLP::error($@, 1) if $@ and $@ !~ /\cS\cT\cO\cP/;
 	}
 	PLP::sendheaders() unless $PLP::sentheaders;

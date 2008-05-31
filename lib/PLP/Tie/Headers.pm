@@ -1,7 +1,10 @@
 package PLP::Tie::Headers;
 
 use strict;
+use warnings;
 use Carp;
+
+our $VERSION = '1.00';
 
 =head1 PLP::Tie::Headers
 
@@ -23,14 +26,21 @@ sub TIEHASH {
 		{
 			'content-type'  => 'Content-Type',
 			'x-plp-version' => 'X-PLP-Version',
-		}
+		},
+		1  # = content-type untouched
 	], $_[0];
 }
 
 sub FETCH {
 	my ($self, $key) = @_;
+	if ($self->[2] and defined $self->[0]->{'Content-Type'}) {
+		my $utf8 = eval { grep {$_ eq "utf8"}  PerlIO::get_layers(*STDOUT) };
+		$self->[0]->{'Content-Type'} .= '; charset=utf-8' if $utf8;
+		$self->[2] = 0;
+	}
 	$key =~ tr/_/-/;
-	return $self->[0]->{ $self->[1]->{lc $key} };
+	defined ($key = $self->[1]->{lc $key}) or return;
+	return $self->[0]->{$key};
 }
 
 sub STORE {
@@ -47,6 +57,7 @@ sub STORE {
 	} else {
 		$self->[1]->{lc $key} = $key;
 	}
+	$self->[2] = 0 if $key eq 'Content-Type';
 	return ($self->[0]->{$key} = $value);
 }
 

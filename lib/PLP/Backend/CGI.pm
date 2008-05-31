@@ -1,6 +1,7 @@
 package PLP::Backend::CGI;
 
 use strict;
+use warnings;
 
 our $VERSION = '1.02';
 
@@ -16,7 +17,7 @@ sub init {
 		# Run backwards through PATH_TRANSLATED to find target filename,
 		# then get file (relative) by stripping PATH_INFO.
 		my ($path, $rel) = (delete $ENV{PATH_TRANSLATED}, delete $ENV{PATH_INFO});
-		my $path_info;
+		my $path_info = '';
 		while (not -f $path) {
 			if (not $path =~ s/(\/+[^\/]*)$//) {
 				printf STDERR "PLP: Not found: $path$path_info ($ENV{REQUEST_URI})\n";
@@ -26,7 +27,7 @@ sub init {
 			# move last path element onto PATH_INFO
 			$path_info = $1 . $path_info;
 		}
-		if (defined $path_info) {
+		if ($path_info ne '') {
 			$rel =~ s/\Q$path_info\E$//;
 			$ENV{PATH_INFO} = $path_info;
 		}

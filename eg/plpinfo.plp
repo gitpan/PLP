@@ -25,9 +25,10 @@ use Config;
 printf "<tr><th>%s</th><td>%s</td></tr>\n", @$_ for (
 	["System"     => qx(uname -snrvm)],
 	["Server API" => $PLP::interface ? $PLP::interface : "?"],
-	["Perl"       => join ".", map ord, split //, $^V],
-	["Build Date" => $Config{cf_time}],
-	["Debug Build" => $^P ? "yes" : "no"],
+	["Perl"       => sprintf '%vd', $^V],
+	["Perl API"   => $Config{api_versionstring} || "?"],
+	["Build Date" => $Config{cf_time} || "?"],
+	["Debug Build" => $^P ? "yes ($^P)" : "no"],
 	["Thread Safety" => $Config{usethreads} ? "enabled" : "disabled"],
 	["Include Path" => join "; ", @INC],
 );
@@ -40,13 +41,13 @@ printf "<tr><th>%s</th><td>%s</td></tr>\n", @$_ for (
 my %modules;
 s!/!::!g, s/\.pm$// and $modules{$_} = $_->VERSION || "" for keys %INC;
 printf "<tr><th>%s</th><td>%s</td></tr>\n", @$_ for (
-	["Modules" => join "<br>\n",
+	["Loaded Modules" => join "<br>\n",
 		map "$_ $modules{$_}", sort grep /^PLP/, keys %modules
 	],
-	["Debug Output" => join "; ",
+	["Debug Output" => join("; ",
 		$PLP::DEBUG & 1 ? "run-time errors" : (),
 		$PLP::DEBUG & 2 ? "headers" : (),
-	],
+	) || "disabled"],
 	["Caching" => $PLP::use_cache ? "on" : "off"], #TODO
 );
 :></table>

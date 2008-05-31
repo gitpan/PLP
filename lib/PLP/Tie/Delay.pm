@@ -2,6 +2,9 @@ package PLP::Tie::Delay;
 
 use strict;
 no strict 'refs';
+use warnings;
+
+our $VERSION = '1.00';
 
 =head1 PLP::Tie::Delay
 

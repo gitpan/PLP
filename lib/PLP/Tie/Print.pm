@@ -1,6 +1,9 @@
 package PLP::Tie::Print;
 
 use strict;
+use warnings;
+
+our $VERSION = '1.00';
 
 =head1 PLP::Tie::Print
 

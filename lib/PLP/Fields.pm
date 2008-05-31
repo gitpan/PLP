@@ -1,6 +1,9 @@
 package PLP::Fields;
 
 use strict;
+use warnings;
+
+our $VERSION = '1.00';
 
 # Has only one function: doit(), which ties the hashes %get, %post, %fields
 # and %header in PLP::Script. Also generates %cookie immediately.
@@ -9,7 +12,7 @@ sub doit {
 	# %get
 	
 	my $get = \%PLP::Script::get;
-	if (length $ENV{QUERY_STRING}){
+	if (defined $ENV{QUERY_STRING} and length $ENV{QUERY_STRING}){
 		for (split /[&;]/, $ENV{QUERY_STRING}) {
 			my @keyval = split /=/, $_, 2;
 			PLP::Functions::DecodeURI(@keyval);
@@ -22,13 +25,10 @@ sub doit {
 
 	tie %PLP::Script::post, 'PLP::Tie::Delay', 'PLP::Script::post', sub {
 		my %post;
-		my $post;
+		return \%post unless $ENV{CONTENT_TYPE} and $ENV{CONTENT_LENGTH} and
+			$ENV{CONTENT_TYPE} =~ m!^(?:application/x-www-form-urlencoded|$)!;
 		
-		return \%post if $ENV{CONTENT_TYPE} !~
-			m!^(?:application/x-www-form-urlencoded|$)!;
-		
-		$post = $PLP::read->($ENV{CONTENT_LENGTH}) if $ENV{CONTENT_LENGTH};
-		
+		my $post = $PLP::read->($ENV{CONTENT_LENGTH});
 		return \%post unless defined $post and length $post;
 		
 		for (split /&/, $post) {
@@ -113,6 +113,10 @@ when sending the headers is the one you used first. The following are equal:
     $header{'Content-Type'}
     $header{Content_Type}
     $headers{CONTENT_type}
+
+If a value contains newlines, the header is repeated for each line:
+
+	$header{Allow} = "HEAD\nGET";  # equivalent to HEAD,GET
 
 =back
 

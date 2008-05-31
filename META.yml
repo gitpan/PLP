@@ -1,31 +1,31 @@
 --- #YAML:1.0
 name: PLP
 abstract: Perl in HTML pages
-version: 3.20
+version: 3.21
 version_from: PLP.pm
 author:
     - Mischa POSLAWSKY <perl@shiar.org>
 license: mit
 resources:
     homepage: http://plp.shiar.net/
-    Repository: git://git.shiar.net/plp
+    repository: git://git.shiar.net/plp
 requires:
-    - perl: 5.6.0
+    perl: 5.6.0
 recommends:
-    - CGI::Cookie: 0
+    CGI::Cookie: 0
 optional_features:
     - mod_perl:
         description: mod_perl backend for Apache
         requires:
             Apache::Constants: 0
-	- mod_perl2:
+    - mod_perl-two:
         description: mod_perl2 backend for Apache
-		requires:
-			Apache2::Const: 0
-			Apache2::RequestRec: 0
-			Apache2::RequestUtil: 0
-			Apache2::RequestIO: 0
-    - FastCGI:
+        requires:
+            Apache2::Const: 0
+            Apache2::RequestRec: 0
+            Apache2::RequestUtil: 0
+            Apache2::RequestIO: 0
+    - fastcgi:
         description: FastCGI backend
         requires:
             FCGI: 0.61

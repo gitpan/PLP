@@ -2,9 +2,7 @@ use strict;
 
 use Test::More tests => 6;
 
-BEGIN { use_ok('PLP') }
-
-PLP::Functions->import();
+BEGIN { use_ok('PLP::Functions') }
 
 is(
 	Entity(q{<a test="'&'"/>}),

@@ -1,9 +1,12 @@
 package PLP::Functions;
 
-use base 'Exporter';
-use Fcntl qw(:flock);
 use strict;
+use warnings;
 
+use Exporter qw(import);
+use Fcntl qw(:flock);
+
+our $VERSION = '1.00';
 our @EXPORT = qw/Entity DecodeURI EncodeURI Include include PLP_END
                  AddCookie ReadFile WriteFile AutoURL Counter exit/;
 
@@ -13,7 +16,7 @@ sub Include ($) {
 	$PLP::inA = 0;
 	$PLP::inB = 0;
 	local $@;
-	eval 'package PLP::Script; ' . PLP::source($PLP::file, 0, join ' ', (caller)[2,1]);
+	eval 'package PLP::Script; no warnings; ' . PLP::source($PLP::file, 0, join ' ', (caller)[2,1]);
 	if ($@) {
 		PLP::Functions::exit() if $@ =~ /\cS\cT\cO\cP/;
 		PLP::error($@, 1);
@@ -35,6 +38,7 @@ sub PLP_END (&) {
 sub Entity (@) {
 	my $ref = defined wantarray ? [@_] : \@_;
 	for (@$ref) {
+		defined or next;
 		eval {
 			s/&/&amp;/g;
 			s/"/&quot;/g;
@@ -51,6 +55,7 @@ sub Entity (@) {
 sub DecodeURI (@) {
 	my $ref = defined wantarray ? [@_] : \@_;
 	for (@$ref) {
+		defined or next;
 		eval {
 			tr/+/ /;  # Browsers do tr/ /+/ - I don't care about RFCs, but
 			          # I do care about real-life situations.
@@ -63,6 +68,7 @@ sub DecodeURI (@) {
 sub EncodeURI (@) {
 	my $ref = defined wantarray ? [@_] : \@_;
 	for (@$ref) {
+		defined or next;
 		eval {
 			s{([^A-Za-z0-9\-_.!~*'()/?:@\$,])}{sprintf("%%%02x", ord $1)}ge;
 		};
@@ -72,7 +78,7 @@ sub EncodeURI (@) {
 
 sub AddCookie ($) {
 	if ($PLP::Script::header{'Set-Cookie'}) {
-		$PLP::Script::header{'Set-Cookie'} .= "\nSet-Cookie: $_[0]";
+		$PLP::Script::header{'Set-Cookie'} .= "\n" . $_[0];
 	} else {
 		$PLP::Script::header{'Set-Cookie'} = $_[0];
 	}
