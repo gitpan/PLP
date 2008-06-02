@@ -1,3 +1,8 @@
+3.22 - June 2, 2008:
+- Fix delete %header
+- Fix breakage with old versions of Exporter
+- Tests emulating actual PLP usage
+
 3.21 - May 31, 2008:
 - Fix everything() wrapper (broke pre-3.20 CGI scripts on 3.20)
 - %header values containing newlines will be sent as multiple fields

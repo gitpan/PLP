@@ -38,10 +38,11 @@ long as you do not switch packages).
 
 =item How can I make PLP faster?
 
-With mod_perl, PLP is a lot faster than with CGI. CGI scripts execute an
-external interpreter, but mod_perl is a Perl interpreter inside Apache.
+With mod_perl or FastCGI, PLP is a lot faster than with CGI.
+Instead of executing a new perl process for each request, the same interpreter
+will serve multiple pages.
 
-=item I already use mod_perl, can I make my scripts even faster?
+=item I already run persistently, can I make my scripts even faster?
 
 Well, you already have scripts that probably are faster than PHP equivalents,
 but speed maniacs always want more. Modules are cached, so with a proper module
@@ -78,15 +79,15 @@ B<before> the code is executed (at compile-time).
 
 =item Why do my C<END> blocks never get executed?
 
-If they are not, you are probably running under mod_perl. The blocks are
-executed when the interpreter stops, but the mod_perl interpreter is not exited
-after the PLP script has ended. Use C<PLP_END> blocks instead. Please note that
-C<PLP_END> is a normal statement, so you may need a semicolon.
+These blocks are executed when the interpreter stops, which only occurs if you
+are running as CGI.  To catch the exit of a PLP script, use C<PLP_END> blocks instead.
+Please note that C<PLP_END> is a normal statement, so you may need a semicolon.
 
     <html><body>
     <: PLP_END { :>
         </body></html>
     <: } :>
+    contents
 
 =item Can I disable the error messages?
 

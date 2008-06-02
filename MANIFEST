@@ -19,6 +19,7 @@ lib/PLP/HowTo.pod
 bin/plp.cgi
 bin/plp.fcgi
 t/10-functions.t
+t/50-cgi.t
 t/91-meta.t
 t/92-pod.t
 t/93-podcover.t

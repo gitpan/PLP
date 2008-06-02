@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 =head1 PLP::Tie::Headers
 
@@ -64,8 +64,8 @@ sub STORE {
 sub DELETE {
 	my ($self, $key) = @_;
 	$key =~ tr/_/-/;
-	delete $self->[0]->{$key};
-	return delete $self->[1]->{lc $key};
+	defined ($key = delete $self->[1]->{lc $key}) or return;
+	return delete $self->[0]->{$key};
 }
 
 sub CLEAR {

@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name: PLP
 abstract: Perl in HTML pages
-version: 3.21
+version: 3.22
 version_from: PLP.pm
 author:
     - Mischa POSLAWSKY <perl@shiar.org>
@@ -29,6 +29,36 @@ optional_features:
         description: FastCGI backend
         requires:
             FCGI: 0.61
+provides:
+    PLP:
+        file: lib/PLP.pm
+        version: 3.22
+    PLP::Script:
+        file: lib/PLP.pm
+    PLP::Functions:
+        file: lib/PLP/Functions.pm
+        version: 1.00
+    PLP::Backend::Apache:
+        file: lib/PLP/Backend/Apache.pm
+        version: 1.00
+    PLP::Backend::CGI:
+        file: lib/PLP/Backend/CGI.pm
+        version: 1.02
+    PLP::Backend::FastCGI:
+        file: lib/PLP/Backend/FastCGI.pm
+        version: 1.01
+    PLP::Fields:
+        file: lib/PLP/Fields.pm
+        version: 1.00
+    PLP::Tie::Delay:
+        file: lib/PLP/Tie/Delay.pm
+        version: 1.00
+    PLP::Tie::Headers:
+        file: lib/PLP/Tie/Headers.pm
+        version: 1.01
+    PLP::Tie::Print:
+        file: lib/PLP/Tie/Print.pm
+        version: 1.00
 generated_by: Mischa POSLAWSKY <perl@shiar.org>
 meta-spec:
     version: 1.3

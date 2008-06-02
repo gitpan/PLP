@@ -14,7 +14,7 @@ use File::Spec;
 use strict;
 use warnings;
 
-our $VERSION = '3.21';
+our $VERSION = '3.22';
 
 # Subs in this package:
 #  _default_error($plain, $html)    Default error handler
@@ -407,8 +407,9 @@ These are described in L<PLP::Fields>.
 Not only syntax is important, you should also be aware of some other important
 features. Your script runs inside the package C<PLP::Script> and shouldn't
 leave it. This is because when your script ends, all global variables in the
-C<PLP::Script> package are destroyed, which is very important if you run under
-mod_perl (they would retain their values if they weren't explicitly destroyed).
+C<PLP::Script> package are destroyed, which is very important if you run a
+persistent backend (they would retain their values if they weren't explicitly
+destroyed).
 
 Until your first output, you are printing to a tied filehandle C<PLPOUT>. On
 first output, headers are sent to the browser and C<STDOUT> is selected for
@@ -420,13 +421,13 @@ line your output started. An alternative way of setting headers is using Perl's
 BEGIN blocks. BEGIN blocks are executed as soon as possible, before anything
 else.
 
-Because the interpreter that mod_perl uses never ends, C<END { }> blocks won't
-work properly. You should use C<PLP_END { };> instead. Note that this is a not
-a built-in construct, so it needs proper termination with a semi-colon (as do
-C<eval> and C<do>).
+Unless you're running as CGI, the interpreter won't exit after processing a page,
+so C<END { }> blocks won't work properly.  You should use C<PLP_END { };> instead.
+Note that this is a not a built-in construct, so it needs proper termination
+with a semi-colon (as do C<eval> and C<do>).
 
-Under mod_perl, modules are loaded only once. A good modular design can improve
-performance because of this, but you will have to B<reload> the modules
+When run persistently, modules are loaded only once. A good modular design can
+improve performance because of this, but you will have to B<reload> the modules
 yourself when there are newer versions. 
 
 The special hashes are tied hashes and do not always behave the way you expect,

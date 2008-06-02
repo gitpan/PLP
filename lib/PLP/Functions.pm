@@ -3,7 +3,7 @@ package PLP::Functions;
 use strict;
 use warnings;
 
-use Exporter qw(import);
+use base 'Exporter';
 use Fcntl qw(:flock);
 
 our $VERSION = '1.00';
