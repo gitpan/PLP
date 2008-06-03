@@ -106,6 +106,15 @@ $HEAD
 </td></tr></table>
 TEST
 
+SKIP: {
+
+my $INCFILE = File::Spec->rel2abs("$base/missinginclude");
+if (open my $dummy, "<", $INCFILE) {  # like PLP::source will
+	fail("file missinginclude shouldn't exist");
+	skip("missinginclude tests", 2);
+}
+my $INCWARN = qq{Can't open "$INCFILE" ($!)};
+
 plp_is('warnings', split /\n\n/, <<TEST, 2);
 1
 <: use warnings :>
@@ -129,16 +138,16 @@ Useless use of a constant in void context at $testfile line 4.
 warning at $testfile line 6.
 
 4
-<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>Can't open "$base/missinginclude" (No such file or directory) at $testfile line 8.
+<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>$INCWARN at $testfile line 8.
 </td></tr></table>
 5
-<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>Can't open "$base/missinginclude" (No such file or directory) at $testfile line 10.
+<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>$INCWARN at $testfile line 10.
 </td></tr></table>
 TEST
 
 plp_is('$PLP::ERROR',
 	'<: $PLP::ERROR = sub {print "Oh no: $_[0]"} :> <(missinginclude)>.',
-	qq{$HEAD\n Oh no: Can't open "$base/missinginclude" (No such file or directory) at $testfile line 1.\n\n}
+	qq{$HEAD\n Oh no: $INCWARN at $testfile line 1.\n\n}
 );
 
 #TODO: 404
@@ -148,6 +157,8 @@ plp_is('$PLP::DEBUG',
 	'<: $PLP::DEBUG = 2; delete $header{x_plp_version} :>1<(missinginclude)>2',
 	"Content-Type: text/plain\n\nContent-Type: text/html\n\n1"
 );
+
+}
 
 plp_is('utf8', '<: use open qw/:std :utf8/; print chr 191', <<TEST);
 Content-Type: text/html; charset=utf-8

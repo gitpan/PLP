@@ -14,7 +14,7 @@ use File::Spec;
 use strict;
 use warnings;
 
-our $VERSION = '3.22';
+our $VERSION = '3.22_01';
 
 # Subs in this package:
 #  _default_error($plain, $html)    Default error handler
