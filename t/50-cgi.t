@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Cwd;
 use File::Spec;
 use Test::More;
 
@@ -14,7 +15,7 @@ require_ok('PLP::Backend::CGI') or BAIL_OUT();
 $PLP::use_cache = 0 if $PLP::use_cache;
 #TODO: caching on (change file names)
 
-my $base = File::Spec->tmpdir || File::Spec->curdir;
+my $base = Cwd::abs_path(File::Spec->tmpdir || File::Spec->curdir);
 -w $base or BAIL_OUT("$base not writable");
 my $testfile = 'testfile.plp';
 not -f "$base/$testfile" or BAIL_OUT("$testfile exists");
