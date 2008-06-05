@@ -14,7 +14,7 @@ use File::Spec;
 use strict;
 use warnings;
 
-our $VERSION = '3.22_01';
+our $VERSION = '3.22_02';
 
 # Subs in this package:
 #  _default_error($plain, $html)    Default error handler
@@ -76,7 +76,9 @@ sub error {
 		print "Status: $type\nContent-Type: text/html\n\n",
 			qq{<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n<html>},
 			"<head>\n<title>$type $short</title>\n</head></body>\n<h1>$short",
-			"</h1>\n$long<p>\n<hr>\n$ENV{SERVER_SIGNATURE}</body></html>";
+			"</h1>\n$long<p>\n<hr>\n";
+		print $ENV{SERVER_SIGNATURE} if $ENV{SERVER_SIGNATURE};
+		print "</body></html>";
 	}
 }
 

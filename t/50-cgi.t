@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Cwd qw(cwd);
+use File::Spec;
 use Test::More;
 
 eval { require PerlIO::scalar };
@@ -14,11 +14,12 @@ require_ok('PLP::Backend::CGI') or BAIL_OUT();
 $PLP::use_cache = 0 if $PLP::use_cache;
 #TODO: caching on (change file names)
 
-my $base = -w '/tmp' ? '/tmp' : cwd();
+my $base = File::Spec->tmpdir || File::Spec->curdir;
+-w $base or BAIL_OUT("$base not writable");
 my $testfile = 'testfile.plp';
 not -f "$base/$testfile" or BAIL_OUT("$testfile exists");
 
-open ORGOUT, '>&', STDOUT;
+open ORGOUT, '>&', *STDOUT;
 
 sub plp_is {
 	my ($test, $plp, $expect) = @_;
