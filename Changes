@@ -1,3 +1,9 @@
+3.23 - October 21, 2009:
+- Make tests pass on various systems
+- Fix header output using say() on Perl >= 5.10.1
+- EscapeHTML() for basic attribute quoting
+- Fix vim syntax highlighting of normal Perl code
+
 3.22 - June 2, 2008:
 - Fix delete %header
 - Fix breakage with old versions of Exporter

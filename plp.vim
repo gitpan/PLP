@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:	PLP (Perl in HTML)
 " Maintainer:	Shiar <perl@shiar.org>
-" Last Change:	2002 May 20 
+" Last Change:	2009 October 19
 " Cloned From:	aspperl.vim
 " Author:	Juerd <juerd@juerd.nl>
 
@@ -34,11 +34,11 @@ syn cluster htmlPreproc add=PLPperlblock
 syn keyword perlControl PLP_END
 syn keyword perlStatementInclude include Include
 syn keyword perlStatementFiles ReadFile WriteFile Counter
-syn keyword perlStatementScalar Entity AutoURL DecodeURI EncodeURI
+syn keyword perlStatementScalar EscapeHTML Entity AutoURL DecodeURI EncodeURI
 
 syn cluster PLPperlcode contains=perlStatement.*,perlFunction,perlOperator,perlVarPlain,perlVarNotInMatches,perlShellCommand,perlFloat,perlNumber,perlStringUnexpanded,perlString,perlQQ,perlControl,perlConditional,perlRepeat,perlComment,perlPOD,perlHereDoc,perlPackageDecl,perlElseIfError,perlFiledescRead,perlMatch
   
-syn region  PLPperlblock keepend matchgroup=Delimiter start=+<:=\=+ end=+:>+ transparent contains=@PLPperlcode
+syn region  PLPperlblock keepend matchgroup=Delimiter start=+<:=\=+ end=+:>+ contains=@PLPperlcode
 
 syn region  PLPinclude keepend matchgroup=Delimiter start=+<(+ end=+)>+
 

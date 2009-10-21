@@ -14,7 +14,7 @@ use File::Spec;
 use strict;
 use warnings;
 
-our $VERSION = '3.22_02';
+our $VERSION = '3.23';
 
 # Subs in this package:
 #  _default_error($plain, $html)    Default error handler
@@ -94,6 +94,7 @@ sub handler {
 
 # Sends the headers waiting in %PLP::Script::header
 sub sendheaders () {
+	local $\;  # reset print behaviour if triggered by say()
 	$PLP::sentheaders ||= [ caller 1 ? (caller 1)[1, 2] : (caller)[1, 2] ];
 	print STDOUT "Content-Type: text/plain\n\n" if $PLP::DEBUG & 2;
 	while (my ($header, $values) = each %PLP::Script::header) {

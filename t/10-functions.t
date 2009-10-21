@@ -4,6 +4,8 @@ use Test::More tests => 6;
 
 BEGIN { use_ok('PLP::Functions') }
 
+# legacy
+
 is(
 	Entity(q{<a test="'&'"/>}),
 	"&lt;a test=&quot;'&amp;'&quot;/&gt;",

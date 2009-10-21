@@ -3,7 +3,7 @@ package PLP::Backend::CGI;
 use strict;
 use warnings;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 use PLP;
 
@@ -20,7 +20,7 @@ sub init {
 		my $path_info = '';
 		while (not -f $path) {
 			if (not $path =~ s/(\/+[^\/]*)$//) {
-				printf STDERR "PLP: Not found: $path$path_info ($ENV{REQUEST_URI})\n";
+				warn "PLP: Not found: $path$path_info ($ENV{REQUEST_URI})\n";
 				PLP::error(undef, 404);
 				return;
 			}
@@ -35,7 +35,7 @@ sub init {
 		$ENV{SCRIPT_NAME} = $rel;
 	}
 	elsif (not -f $ENV{SCRIPT_FILENAME}) {
-		print STDERR "PLP: Not found: $ENV{SCRIPT_FILENAME} ($ENV{REQUEST_URI})\n";
+		warn "PLP: Not found: $ENV{SCRIPT_FILENAME} ($ENV{REQUEST_URI})\n";
 		PLP::error(undef, 404);
 		return;
 	}
@@ -43,7 +43,7 @@ sub init {
 	$ENV{"PLP_$_"} = $ENV{"SCRIPT_$_"} for qw/NAME FILENAME/;
 
 	if (not -r $ENV{PLP_FILENAME}) {
-		print STDERR "PLP: Can't read: $ENV{PLP_FILENAME} ($ENV{REQUEST_URI})\n";
+		warn "PLP: Can't read: $ENV{PLP_FILENAME} ($ENV{REQUEST_URI})\n";
 		PLP::error(undef, 403);
 		return;
 	}

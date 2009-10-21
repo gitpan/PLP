@@ -1,6 +1,6 @@
 =head1 NAME
 
-PLP::HowTo - Some examples of commong web things in PLP.
+PLP::HowTo - Some examples of common web things in PLP.
 
 =head1 HOW TO...
 

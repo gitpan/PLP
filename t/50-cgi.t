@@ -8,7 +8,7 @@ use Test::More;
 eval { require PerlIO::scalar };
 plan skip_all => "PerlIO required (perl 5.8) to test PLP" if $@;
 
-plan tests => 18;
+plan tests => 20;
 
 require_ok('PLP::Backend::CGI') or BAIL_OUT();
 
@@ -27,15 +27,18 @@ sub plp_is {
 	chomp $expect;
 	local $Test::Builder::Level = $Test::Builder::Level + 1;
 
-	eval {
-		open my $testfh, '>', "$base/$testfile" or die $!;
-		print {$testfh} $plp or die $!;
-		close $testfh or die $!;
-	};
-	not $@ or fail("write $testfile"), diag("    Error: $@"), return;
+	if (defined $plp) {
+		eval {
+			open my $testfh, '>', "$base/$testfile" or die $!;
+			print {$testfh} $plp or die $!;
+			close $testfh or die $!;
+		};
+		not $@ or fail("write $testfile"), diag("    Error: $@"), return;
+	}
 
 	close STDOUT;
 	open STDOUT, '>', \my $output;  # STDOUT buffered to scalar
+	select STDOUT;  # output before start() (which selects PLPOUT)
 	eval {
 		local $SIG{__WARN__} = sub { print $_[0] }; # enables warnings
 		PLP::everything();
@@ -46,6 +49,16 @@ sub plp_is {
 	$output =~ s{((?:.+\n)*)}{ join "", sort split /(?<=\n)/, $1 }e; # order headers
 	is($output, $expect, $test);
 }
+
+sub getwarning {
+	# captures the first warning produced by the given code string
+	my ($code, $line, $file) = @_;
+
+	local $SIG{__WARN__} = sub { die @_ };
+	# warnings module runs at BEGIN, so we need to use icky expression evals
+	eval qq(# line $line "$file"\n$code; return);
+	return $@;
+};
 
 %ENV = (
 	REQUEST_METHOD => 'GET',
@@ -101,11 +114,10 @@ rename "$base/$testfile", "$base/$testfile.inc";
 plp_is('include', "<($testfile.inc)> <: include '$testfile.inc'", "$HEAD\nok ok");
 unlink "$base/$testfile.inc";
 
+my $SYNTAXERR = getwarning("q\cq\n\cq; syntax(error", 1, $testfile);
 plp_is('fatal error', "runtime\n<: syntax(error :>\nruntime", <<TEST);
 $HEAD
-<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>syntax error at $testfile line 2, at EOF
-  (Might be a runaway multi-line \cq\cq string starting on line 1)
-</td></tr></table>
+<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>$SYNTAXERR</td></tr></table>
 TEST
 
 SKIP: {
@@ -117,33 +129,24 @@ if (open my $dummy, "<", $INCFILE) {  # like PLP::source will
 }
 my $INCWARN = qq{Can't open "$INCFILE" ($!)};
 
+my $VOIDWARN = getwarning('42', 2, $testfile);
+
 plp_is('warnings', split /\n\n/, <<TEST, 2);
-1
-<: use warnings :>
-2
-<: 42 :>
-3
-<: warn "warning" :>
-4
-<: include "missinginclude" :>
-5
-<(missinginclude)>
+1<: use warnings :>
+2<: 42 :>
+3<: warn "warning" :>
+4<: include "missinginclude" :>
+5<(missinginclude)>
 6
 
 $HEAD
-Useless use of a constant in void context at $testfile line 4.
-1
-
+${VOIDWARN}1
 2
+3warning at $testfile line 3.
 
-3
-warning at $testfile line 6.
-
-4
-<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>$INCWARN at $testfile line 8.
+4<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>$INCWARN at $testfile line 4.
 </td></tr></table>
-5
-<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>$INCWARN at $testfile line 10.
+5<table border=1 class="PLPerror"><tr><td><b>Debug information:</b><br>$INCWARN at $testfile line 5.
 </td></tr></table>
 TEST
 
@@ -151,9 +154,6 @@ plp_is('$PLP::ERROR',
 	'<: $PLP::ERROR = sub {print "Oh no: $_[0]"} :> <(missinginclude)>.',
 	qq{$HEAD\n Oh no: $INCWARN at $testfile line 1.\n\n}
 );
-
-#TODO: 404
-#TODO: 403
 
 plp_is('$PLP::DEBUG',
 	'<: $PLP::DEBUG = 2; delete $header{x_plp_version} :>1<(missinginclude)>2',
@@ -175,6 +175,41 @@ my @envtest = (
 );
 
 plp_is('%ENV (on apache)', @envtest);
+
+SKIP: {
+chmod 0244, $testfile or skip("changed permissions", 1);
+plp_is('permission denied', undef, <<TEST);
+Content-Type: text/html
+PLP: Can't read: $base/$testfile (/$testfile/test/123)
+Status: 403
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>403 Forbidden</title>
+</head></body>
+<h1>Forbidden</h1>
+You don't have permission to access /$testfile/test/123 on this server.<p>
+<hr>
+</body></html>
+TEST
+chmod 0644, $testfile;
+}
+
+$ENV{PATH_TRANSLATED} = "$base/missinginclude/test/123";
+plp_is('not found', undef, <<TEST);
+Content-Type: text/html
+PLP: Not found: $base/missinginclude/test/123 (/$testfile/test/123)
+Status: 404
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head></body>
+<h1>Not Found</h1>
+The requested URL /$testfile/test/123 was not found on this server.<p>
+<hr>
+</body></html>
+TEST
 
 %ENV = (
 	REQUEST_METHOD => 'GET',

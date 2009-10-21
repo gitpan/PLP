@@ -4,10 +4,12 @@ use strict;
 use warnings;
 
 use base 'Exporter';
+use Carp;
 use Fcntl qw(:flock);
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 our @EXPORT = qw/Entity DecodeURI EncodeURI Include include PLP_END
+                 EscapeHTML
                  AddCookie ReadFile WriteFile AutoURL Counter exit/;
 
 sub Include ($) {
@@ -33,6 +35,19 @@ sub exit (;$) {
 
 sub PLP_END (&) {
 	push @PLP::END, shift;
+}
+
+sub EscapeHTML {
+	@_ == 1 or croak "Unsupported parameters given to EscapeHTML";
+	unshift @_, shift if defined wantarray;  # dereference if not void
+	for ($_[0]) {
+		defined or next;
+		s/&/&amp;/g;
+		s/"/&quot;/g;
+		s/</&lt;/g;
+		s/>/&gt;/g;
+	}
+	return $_[0];
 }
 
 sub Entity (@) {
@@ -210,17 +225,36 @@ Adds a piece of code that is executed when at the end of the PLP document. This 
 
 You should use this function instead of Perl's built-in C<END> blocks, because those do not work properly with mod_perl.
 
+=item EscapeHTML STRING
+
+Replaces HTML syntax characters by HTML entities, so the text can be output safely.
+You should always use this when displaying user input (or database output),
+to avoid cross-site-scripting vurnerabilities.
+
+In void context, B<changes> the value of the given variable.
+
+    <: EscapeHTML($user_input); print "<pre>$user_input</pre>"; :>
+
+In other contexts, returns the changed version.
+
+    <a href="<:= EscapeHTML($ENV{REQUEST_URI}) :>">
+
+Be warned that single quotes are not substituted, so always use double quotes for attributes.
+Also does not convert whitespace for formatted output; use Entity() for that.
+
+To escape high-bit characters as well, refer to L<HTML::Entities|HTML::Entities>.
+
 =item Entity LIST
 
-Replaces HTML syntax characters by HTML entities, so they can be displayed literally. You should always use this when displaying user input (or database output), to avoid cross-site-scripting vurnerabilities.
+Formats given arguments for literal display in HTML documents.
+Similar to EscapeHTML(), but also preserves newlines and consecutive spaces
+using corresponding C<< <br> >> and C<&nbsp;> respectively.
 
 In void context, B<changes> the values of the given variables. In other contexts, returns the changed versions.
 
-    <: print Entity($user_input); :>
+    <: print '<p>' . Entity($user_input) . '</p>'; :>
 
-Be warned that this function also HTMLizes consecutive whitespace and newlines (using &nbsp; and <br> respectively).
-For simple escaping, use L<XML::Quote|XML::Quote>.
-To escape high-bit characters as well, use L<HTML::Entities|HTML::Entities>.
+Inside attributes, always use EscapeHTML() instead.
 
 =item EncodeURI LIST
 
@@ -235,7 +269,7 @@ Note that the following reserved characters are I<not> percent-encoded, even tho
 	/ ? : @ $
 
 This should be safe for escaping query values (as in the example above),
-but it may be a better idea to use L<URI::Escape|URI::Escape> instead.
+but otherwise it may be a better idea to use L<URI::Escape|URI::Escape> instead.
 
 =item DecodeURI LIST
 

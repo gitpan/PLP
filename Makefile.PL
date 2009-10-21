@@ -8,7 +8,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME          => 'PLP',
-	VERSION       => '3.22_03',
+	VERSION_FROM  => 'lib/PLP.pm',
 	PREREQ_PM     => {},
 	ABSTRACT_FROM => 'lib/PLP.pm',
 	NO_META       => 1,

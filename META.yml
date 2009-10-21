@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name: PLP
 abstract: Perl in HTML pages
-version: 3.22_03
+version: 3.23
 version_from: PLP.pm
 author:
     - Mischa POSLAWSKY <perl@shiar.org>
@@ -32,7 +32,7 @@ optional_features:
 provides:
     PLP:
         file: lib/PLP.pm
-        version: 3.22_02
+        version: 3.23
     PLP::Functions:
         file: lib/PLP/Functions.pm
         version: 1.00
